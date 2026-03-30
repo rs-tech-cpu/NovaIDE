@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dracula IDE Workspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="noise"></div>
+
+  <div class="app-shell">
+    <header class="topbar glass">
+      <div class="topbar__group">
+        <div class="brand-pill">
+          <span class="brand-pill__dot"></span>
+          NovaIDE
+        </div>
+        <div class="project-pill">
+          <span class="project-pill__label">Workspace</span>
+          <strong data-workspace-name>frontend-studio</strong>
+        </div>
+      </div>
+
+      <label class="command-palette" aria-label="Search workspace files">
+        <span class="command-palette__icon">/</span>
+        <input class="command-palette__input" type="search" placeholder="Search files in the workspace..." data-file-search>
+      </label>
+
+      <div class="topbar__group topbar__group--end">
+        <div class="profile-pill" data-profile-pill>
+          <span class="profile-pill__avatar" data-profile-avatar>NV</span>
+          <div class="profile-pill__meta">
+            <strong data-profile-name>Nova User</strong>
+            <span data-profile-email>Signed in</span>
+          </div>
+        </div>
+        <div class="panel-menu-wrap">
+          <button class="panel-menu-toggle" type="button" aria-label="Open layout menu" aria-expanded="false" data-panel-menu-toggle>
+            Layout
+          </button>
+          <div class="panel-menu glass-subtle" data-panel-menu hidden>
+            <button class="panel-menu__item" type="button" data-menu-toggle="explorer">Toggle File Hierarchy</button>
+            <button class="panel-menu__item" type="button" data-menu-toggle="git">Toggle ChatGPT</button>
+            <button class="panel-menu__item" type="button" data-menu-toggle="terminal">Toggle Terminal</button>
+            <button class="panel-menu__item panel-menu__item--danger" type="button" data-sign-out>Sign Out</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar sidebar--left glass" aria-label="Explorer">
+        <div class="sidebar__header">
+          <div>
+            <p class="eyebrow">Explorer</p>
+            <h2>Project Files</h2>
+          </div>
+          <div class="sidebar__actions">
+            <button class="icon-button" type="button" aria-label="Create new file" data-open-modal>+</button>
+            <button class="icon-button icon-button--ghost" type="button" aria-label="Import files from computer" data-import-trigger>Import</button>
+          </div>
+        </div>
+
+        <nav class="activity-rail" aria-label="Explorer filters">
+          <button class="activity-rail__item is-active" type="button" data-activity="files">Files</button>
+          <button class="activity-rail__item" type="button" data-activity="search">Search</button>
+          <button class="activity-rail__item" type="button" data-activity="imports">Imports</button>
+        </nav>
+
+        <div class="panel-card">
+          <div class="explorer-meta">
+            <span class="status-dot status-dot--live"></span>
+            <span>Browser-based project workspace</span>
+          </div>
+
+          <div class="workspace-summary">
+            <div class="summary-tile">
+              <strong data-total-files>0</strong>
+              <span>Total Files</span>
+            </div>
+            <div class="summary-tile">
+              <strong data-dirty-files>0</strong>
+              <span>Uncommitted</span>
+            </div>
+            <div class="summary-tile">
+              <strong data-imported-files>0</strong>
+              <span>Imported</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card panel-card--stretch">
+          <div class="panel-card__title">
+            <h3>Workspace Tree</h3>
+            <span data-tree-caption>All files</span>
+          </div>
+          <div class="explorer-tools">
+            <button class="pill pill--button pill--tiny" type="button" data-create-folder>New Folder</button>
+            <button class="pill pill--button pill--tiny" type="button" data-duplicate-item>Copy</button>
+            <button class="pill pill--button pill--tiny" type="button" data-move-item>Move</button>
+            <button class="pill pill--button pill--tiny" type="button" data-delete-item>Delete</button>
+          </div>
+          <div class="explorer-selection" data-selection-label>
+            Selected: <strong>index.html</strong>
+          </div>
+          <div class="file-tree" data-tree></div>
+        </div>
+
+        <input type="file" class="sr-only" data-file-input multiple accept=".html,.css,.js,.json,.txt,.md">
+      </aside>
+
+      <section class="editor-pane glass" aria-label="Editor">
+        <div class="editor-pane__header">
+          <div class="editor-tabs" role="tablist" aria-label="Open files" data-editor-tabs></div>
+          <div class="editor-actions">
+            <button class="pill pill--button" type="button" data-save-workspace>Save Snapshot</button>
+            <button class="pill pill--button pill--accent" type="button" data-download-file>Download File</button>
+          </div>
+        </div>
+
+        <div class="editor-toolbar">
+          <div class="editor-toolbar__crumbs">
+            <span data-current-folder>workspace</span>
+            <span>/</span>
+            <strong data-current-file>index.html</strong>
+          </div>
+          <div class="editor-toolbar__stats">
+            <span data-cursor-position>Ln 1, Col 1</span>
+            <span data-current-language>HTML</span>
+            <span data-char-count>0 chars</span>
+          </div>
+        </div>
+
+        <div class="editor-surface">
+          <div class="code-editor" role="tabpanel" aria-label="Code editor">
+            <div class="code-editor__gutter" aria-hidden="true" data-line-numbers></div>
+            <div class="editor-stage">
+              <pre class="code-editor__highlight" aria-hidden="true"><code data-highlight-code></code></pre>
+              <textarea class="code-editor__input" spellcheck="false" data-editor-input></textarea>
+            </div>
+          </div>
+
+          <aside class="preview-pane glass-subtle" aria-label="Live preview">
+            <div class="preview-pane__header">
+              <div>
+                <p class="eyebrow">Live Preview</p>
+                <h3 data-preview-title>index.html</h3>
+              </div>
+              <span class="pill pill--tiny" data-preview-status>Ready</span>
+            </div>
+            <iframe class="preview-frame" title="Live preview" sandbox="allow-scripts" data-preview-frame></iframe>
+          </aside>
+        </div>
+      </section>
+
+      <aside class="sidebar sidebar--right glass" aria-label="ChatGPT panel">
+        <div class="sidebar__header">
+          <div>
+            <p class="eyebrow">Workspace Assistant</p>
+            <h2>ChatGPT</h2>
+          </div>
+        </div>
+
+        <div class="panel-card panel-card--accent">
+          <div class="branch-card">
+            <div>
+              <p class="branch-card__label">API Setup</p>
+              <h3>OpenRouter Chat API</h3>
+            </div>
+            <span class="branch-badge" data-chat-status>Idle</span>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <label class="field field--compact">
+            <span>OpenRouter API key</span>
+            <input class="field__input" type="password" placeholder="sk-or-..." data-openrouter-api-key>
+          </label>
+          <label class="field field--compact">
+            <span>Model</span>
+            <input class="field__input" type="text" value="openai/gpt-5.2" data-openrouter-model>
+          </label>
+          <p class="assistant-note">Your OpenRouter key is stored only in this browser for this local demo.</p>
+        </div>
+
+        <div class="panel-card panel-card--stretch">
+          <div class="panel-card__title">
+            <h3>Chat</h3>
+            <span data-chat-count>0 msgs</span>
+          </div>
+          <div class="chat-list" data-chat-list></div>
+          <label class="field field--compact">
+            <span>Ask about this IDE workspace</span>
+            <textarea class="field__input field__input--textarea" placeholder="Ask ChatGPT to explain, refactor, debug, or plan using the current files..." data-chat-input></textarea>
+          </label>
+          <div class="assistant-actions">
+            <button class="pill pill--button" type="button" data-chat-clear>Clear</button>
+            <button class="pill pill--button pill--accent" type="button" data-chat-send>Send</button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="bottom-panel glass" aria-label="Terminal and debug console">
+        <div class="bottom-panel__header">
+          <div class="bottom-tabs" role="tablist" aria-label="Bottom panels">
+            <button class="bottom-tab is-active" type="button" role="tab" aria-selected="true" data-panel="terminal">
+              Terminal
+            </button>
+            <button class="bottom-tab" type="button" role="tab" aria-selected="false" data-panel="debug">
+              Debug Console
+            </button>
+          </div>
+
+          <div class="session-meta">
+            <span class="status-dot status-dot--live"></span>
+            <span data-session-status>Editor ready</span>
+          </div>
+        </div>
+
+        <div class="bottom-panel__content">
+          <div class="console-panel is-active" data-console-panel="terminal">
+            <div class="terminal">
+              <div class="terminal__output" data-terminal-output></div>
+              <form class="terminal__input-row" data-terminal-form>
+                <span class="prompt">workspace</span>
+                <span class="path" data-terminal-cwd>~/frontend</span>
+                <input class="terminal__input" type="text" autocomplete="off" spellcheck="false" placeholder="Try: help, curl https://example.com, run scripts/reset-project.js" data-terminal-input>
+              </form>
+            </div>
+          </div>
+
+          <div class="console-panel" data-console-panel="debug" hidden>
+            <div class="debug-grid">
+              <div class="debug-card">
+                <p class="debug-card__label">Active File</p>
+                <strong data-debug-file>index.html</strong>
+              </div>
+              <div class="debug-card">
+                <p class="debug-card__label">Language</p>
+                <strong data-debug-language>HTML</strong>
+              </div>
+              <div class="debug-card">
+                <p class="debug-card__label">Project Files</p>
+                <strong data-debug-files>0</strong>
+              </div>
+              <div class="debug-card">
+                <p class="debug-card__label">Pending Changes</p>
+                <strong data-debug-dirty>0</strong>
+              </div>
+            </div>
+
+            <div class="debug-log panel-card">
+              <div class="panel-card__title">
+                <h3>Workspace Events</h3>
+                <span data-debug-events>0 entries</span>
+              </div>
+              <div class="debug-log__list" data-debug-log></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" data-modal hidden>
+    <div class="modal__backdrop" data-close-modal></div>
+    <form class="modal__card glass" data-create-form>
+      <div class="modal__header">
+        <div>
+          <p class="eyebrow">New File</p>
+          <h3>Create a file inside the IDE</h3>
+        </div>
+        <button class="icon-button icon-button--ghost" type="button" aria-label="Close create file dialog" data-close-modal>x</button>
+      </div>
+
+      <label class="field">
+        <span>File name or path</span>
+        <input class="field__input" type="text" name="filePath" placeholder="components/card.js" required data-new-file-path>
+      </label>
+
+      <label class="field">
+        <span>Starter template</span>
+        <select class="field__input" name="template" data-new-file-template>
+          <option value="html">HTML</option>
+          <option value="css">CSS</option>
+          <option value="js">JavaScript</option>
+          <option value="blank">Blank</option>
+        </select>
+      </label>
+
+      <div class="modal__actions">
+        <button class="pill pill--button" type="button" data-close-modal>Cancel</button>
+        <button class="pill pill--button pill--accent" type="submit">Create File</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

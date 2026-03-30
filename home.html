@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nova</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="home.css">
+</head>
+<body>
+  <div class="home-noise"></div>
+
+  <main class="home-screen">
+    <div class="home-screen__backdrop"></div>
+
+    <div class="home-shell">
+      <header class="home-nav">
+        <div class="brand-pill">
+          <span class="brand-pill__dot"></span>
+          Nova
+        </div>
+        <span class="home-nav__status">Browser-native coding workspace</span>
+      </header>
+
+      <section class="home-hero">
+        <div class="home-copy">
+          <p class="eyebrow">Build Faster</p>
+          <h1>Nova brings a sleek development studio straight into your browser.</h1>
+          <p class="home-copy__lede">Design interfaces, edit files, use a Python-backed shell, and collaborate with an integrated workspace assistant without leaving the app.</p>
+          <div class="home-actions">
+            <button class="home-cta" type="button" data-launch-ide>Launch Nova IDE</button>
+            <p class="home-copy__note">A dedicated landing page introduces the product, then hands off into the full IDE.</p>
+          </div>
+        </div>
+
+        <div class="home-showcase">
+          <div class="home-showcase__header">
+            <span class="home-showcase__pill">Nova Workspace</span>
+            <span class="home-showcase__meta">HTML • CSS • JavaScript • Python Shell</span>
+          </div>
+
+          <div class="home-showcase__grid">
+            <article class="home-feature-card">
+              <p class="eyebrow">Editor</p>
+              <h3>Polished code editing</h3>
+              <p>Tabbed editing, file management, live preview, and syntax-aware presentation in one focused space.</p>
+            </article>
+            <article class="home-feature-card">
+              <p class="eyebrow">Terminal</p>
+              <h3>Real shell workflow</h3>
+              <p>Switch from the browser fallback terminal to a Python-backed shell when the local backend is running.</p>
+            </article>
+            <article class="home-feature-card">
+              <p class="eyebrow">Assistant</p>
+              <h3>Workspace-aware AI</h3>
+              <p>Use the OpenRouter-powered sidebar to ask questions with current file context already included.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="auth-modal" data-auth-modal hidden>
+    <div class="auth-modal__backdrop" data-close-auth></div>
+    <form class="auth-card" data-auth-form>
+      <div class="auth-card__header">
+        <div>
+          <p class="eyebrow">Login Required</p>
+          <h2>Sign in to launch Nova IDE</h2>
+        </div>
+        <button class="auth-close" type="button" aria-label="Close login dialog" data-close-auth>x</button>
+      </div>
+
+      <label class="auth-field">
+        <span>Email</span>
+        <input type="email" name="email" placeholder="avery@example.com" autocomplete="email" required data-auth-email>
+      </label>
+
+      <label class="auth-field">
+        <span>Password</span>
+        <input type="password" name="password" placeholder="Enter any password" autocomplete="current-password" required data-auth-password>
+      </label>
+
+      <p class="auth-note" data-auth-note>Use any email and password for this local login gate.</p>
+
+      <button class="auth-submit" type="submit">Enter Nova IDE</button>
+      <div class="google-btn-container">
+        <button class="google-auth-btn" type="button" data-google-login>Continue with Google</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="home.js"></script>
+</body>
+</html>
