@@ -184,6 +184,11 @@
             <span>Model</span>
             <input class="field__input" type="text" value="openai/gpt-5.2" data-openrouter-model>
           </label>
+          <label class="field field--compact">
+            <span>OneCompiler via Vercel</span>
+            <input class="field__input" type="password" placeholder="Configured in Vercel environment variables" data-onecompiler-api-key>
+          </label>
+          <p class="assistant-note" data-onecompiler-status>Python runs use your deployed Vercel OneCompiler key.</p>
           <p class="assistant-note">Your OpenRouter key is stored only in this browser for this local demo.</p>
         </div>
 
@@ -228,7 +233,7 @@
               <form class="terminal__input-row" data-terminal-form>
                 <span class="prompt">workspace</span>
                 <span class="path" data-terminal-cwd>~/frontend</span>
-                <input class="terminal__input" type="text" autocomplete="off" spellcheck="false" placeholder="Try: help, curl https://example.com, run scripts/reset-project.js" data-terminal-input>
+                <input class="terminal__input" type="text" autocomplete="off" spellcheck="false" placeholder="Try: python main.py, help, run scripts/reset-project.js" data-terminal-input>
               </form>
             </div>
           </div>

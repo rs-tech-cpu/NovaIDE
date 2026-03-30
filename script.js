@@ -37,6 +37,8 @@ const elements = {
   chatInput: document.querySelector("[data-chat-input]"),
   openrouterApiKey: document.querySelector("[data-openrouter-api-key]"),
   openrouterModel: document.querySelector("[data-openrouter-model]"),
+  onecompilerApiKey: document.querySelector("[data-onecompiler-api-key]"),
+  onecompilerStatus: document.querySelector("[data-onecompiler-status]"),
   chatSend: document.querySelector("[data-chat-send]"),
   chatClear: document.querySelector("[data-chat-clear]"),
   terminalOutput: document.querySelector("[data-terminal-output]"),
@@ -185,6 +187,7 @@ function createDefaultState() {
     ],
     openrouterApiKey: "",
     openrouterModel: "openai/gpt-5.2",
+    onecompilerApiKey: "",
     collapsedFolders: [],
     logs: [
       createLogEntry("Workspace booted with a blank HTML, CSS, and JavaScript starter.", "info"),
@@ -251,6 +254,7 @@ function loadState() {
         : createDefaultState().chatMessages,
       openrouterApiKey: typeof parsed.openrouterApiKey === "string" ? parsed.openrouterApiKey : "",
       openrouterModel: typeof parsed.openrouterModel === "string" && parsed.openrouterModel ? parsed.openrouterModel : "openai/gpt-5.2",
+      onecompilerApiKey: typeof parsed.onecompilerApiKey === "string" ? parsed.onecompilerApiKey : "",
       collapsedFolders: Array.isArray(parsed.collapsedFolders) ? parsed.collapsedFolders : [],
       logs: Array.isArray(parsed.logs) && parsed.logs.length
         ? parsed.logs.slice(0, 18)
@@ -403,6 +407,10 @@ function inferLanguage(path) {
     return "javascript";
   }
 
+  if (extension === "py") {
+    return "python";
+  }
+
   if (extension === "json") {
     return "json";
   }
@@ -471,6 +479,7 @@ function getLanguageLabel(language) {
     html: "HTML",
     css: "CSS",
     javascript: "JavaScript",
+    python: "Python",
     json: "JSON",
     text: "Text",
   };
@@ -483,6 +492,7 @@ function getFileIconClass(language) {
     html: "tree-file__icon--html",
     css: "tree-file__icon--css",
     javascript: "tree-file__icon--js",
+    python: "tree-file__icon--python",
     json: "tree-file__icon--json",
     text: "tree-file__icon--text",
   };
@@ -597,6 +607,10 @@ function highlightCode(content, language) {
     return highlightJavaScript(content);
   }
 
+  if (language === "python") {
+    return highlightPython(content);
+  }
+
   if (language === "json") {
     return highlightJson(content);
   }
@@ -651,6 +665,18 @@ function highlightHtml(content) {
     { regex: /&lt;!--[\s\S]*?--&gt;/g, className: "token-comment" },
     { regex: /&lt;!DOCTYPE[\s\S]*?&gt;/gi, className: "token-keyword" },
     { regex: /&lt;\/?[A-Za-z][\s\S]*?&gt;/g, className: "token-tag" },
+  ]);
+}
+
+function highlightPython(content) {
+  const escaped = escapeHtml(content);
+
+  return tokenizePatterns(escaped, [
+    { regex: /#[^\n]*/g, className: "token-comment" },
+    { regex: /"""[\s\S]*?"""|'''[\s\S]*?'''|"[^"\n]*"|'[^'\n]*'/g, className: "token-string" },
+    { regex: /\b(def|class|return|if|elif|else|for|while|try|except|finally|with|as|import|from|pass|break|continue|lambda|yield|async|await|in|is|and|or|not|None|True|False)\b/g, className: "token-keyword" },
+    { regex: /\b(\d+(?:\.\d+)?)\b/g, className: "token-number" },
+    { regex: /\b([A-Za-z_][\w]*)(?=\()/g, className: "token-function" },
   ]);
 }
 
@@ -809,6 +835,8 @@ function renderChatPanel() {
   elements.chatStatus.textContent = state.openrouterApiKey ? "Connected" : "API key needed";
   elements.openrouterApiKey.value = state.openrouterApiKey;
   elements.openrouterModel.value = state.openrouterModel;
+  elements.onecompilerApiKey.value = state.onecompilerApiKey;
+  elements.onecompilerStatus.textContent = "Python runs use your deployed Vercel OneCompiler key.";
 
   elements.chatList.innerHTML = messages.map((message) => `
     <article class="chat-message ${message.role === "assistant" ? "chat-message--assistant" : ""}">
@@ -1153,6 +1181,73 @@ async function fetchWithCurl(inputPath) {
   }
 }
 
+async function runPythonWithOneCompiler(filePath, stdin = "") {
+  if (!filePath) {
+    pushTerminalLine("Usage: python <file.py> [--stdin text]", "accent");
+    return;
+  }
+
+  const targetPath = resolveTerminalPath(filePath);
+  const file = state.files.find((item) => item.path === targetPath);
+
+  if (!file) {
+    pushTerminalLine(`File not found: ${filePath}`, "accent");
+    return;
+  }
+
+  if (file.language !== "python") {
+    pushTerminalLine(`Only Python files can be executed with OneCompiler: ${file.path}`, "accent");
+    return;
+  }
+
+  pushTerminalLine(`Running ${file.path} on OneCompiler...`, "muted");
+
+  try {
+    const response = await fetch("/api/run-python", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        language: "python",
+        stdin,
+        files: [
+          {
+            name: getFileName(file.path),
+            content: file.content,
+          },
+        ],
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || data.status === "failed") {
+      pushTerminalLine(data.error || `OneCompiler request failed with ${response.status}`, "accent");
+      return;
+    }
+
+    if (data.stdout) {
+      pushTerminalLine(data.stdout.trimEnd(), "success");
+    }
+
+    if (data.stderr) {
+      pushTerminalLine(data.stderr.trimEnd(), "warn");
+    }
+
+    if (data.exception) {
+      pushTerminalLine(String(data.exception).trim(), "accent");
+    }
+
+    pushTerminalLine(`Execution time: ${data.executionTime ?? 0}ms • Memory: ${data.memoryUsed ?? 0}KB`, "muted");
+    pushLog(`Executed ${file.path} with OneCompiler.`, "info");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    pushTerminalLine(`OneCompiler request failed: ${message}`, "accent");
+    pushLog("OneCompiler execution failed.", "error");
+  }
+}
+
 function moveItemToPath(sourcePath, destinationPath) {
   const file = state.files.find((item) => item.path === sourcePath);
 
@@ -1288,8 +1383,13 @@ async function executeTerminalCommand(rawInput) {
 
   const [command, ...args] = input.split(/\s+/);
   const arg = args.join(" ");
+  const stdinFlagIndex = args.indexOf("--stdin");
+  const pythonTargetArg = stdinFlagIndex >= 0 ? args.slice(0, stdinFlagIndex).join(" ") : arg;
+  const pythonStdinArg = stdinFlagIndex >= 0 ? args.slice(stdinFlagIndex + 1).join(" ") : "";
 
-  if (shellBackend.available && command !== "run" && command !== "help" && command !== "clear") {
+  if (command === "python" || command === "python3") {
+    await runPythonWithOneCompiler(pythonTargetArg || getActiveFile()?.path || "", pythonStdinArg);
+  } else if (shellBackend.available && command !== "run" && command !== "help" && command !== "clear") {
     try {
       await executeBackendShellCommand(input);
     } catch (error) {
@@ -1299,9 +1399,9 @@ async function executeTerminalCommand(rawInput) {
     }
   } else if (command === "help") {
     if (shellBackend.available) {
-      pushTerminalLine("Shell mode: most commands run in the Python backend. Local IDE commands: run <file.js>, help, clear.", "muted");
+      pushTerminalLine("Shell mode: most commands run in the Python backend. Local IDE commands: python <file.py> [--stdin text], run <file.js>, help, clear.", "muted");
     } else {
-      pushTerminalLine("Commands: help, ls, pwd, cd <folder>, cat <file>, open <file>, run <file.js>, curl <url>, mkdir <folder>, touch <file>, cp <src> <dest>, mv <src> <dest>, rm <path>, clear", "muted");
+      pushTerminalLine("Commands: help, ls, pwd, cd <folder>, cat <file>, open <file>, python <file.py> [--stdin text], run <file.js>, curl <url>, mkdir <folder>, touch <file>, cp <src> <dest>, mv <src> <dest>, rm <path>, clear", "muted");
     }
   } else if (command === "cd") {
     const targetPath = resolveTerminalPath(arg);
@@ -2141,6 +2241,11 @@ elements.openrouterApiKey.addEventListener("input", (event) => {
 elements.openrouterModel.addEventListener("input", (event) => {
   state.openrouterModel = event.target.value.trim() || "openai/gpt-5.2";
   persistState();
+});
+elements.onecompilerApiKey.addEventListener("input", (event) => {
+  state.onecompilerApiKey = event.target.value.trim();
+  persistState();
+  renderChatPanel();
 });
 elements.chatSend.addEventListener("click", sendChatMessage);
 elements.chatInput.addEventListener("keydown", (event) => {
