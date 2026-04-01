@@ -59,6 +59,7 @@ const elements = {
   newFileTemplate: document.querySelector("[data-new-file-template]"),
   saveWorkspace: document.querySelector("[data-save-workspace]"),
   downloadFile: document.querySelector("[data-download-file]"),
+  runActiveFile: document.querySelector("[data-run-active-file]"),
   createFolder: document.querySelector("[data-create-folder]"),
   duplicateItem: document.querySelector("[data-duplicate-item]"),
   moveItem: document.querySelector("[data-move-item]"),
@@ -411,6 +412,14 @@ function inferLanguage(path) {
     return "python";
   }
 
+  if (extension === "cpp" || extension === "cc" || extension === "cxx") {
+    return "cpp";
+  }
+
+  if (extension === "cs") {
+    return "csharp";
+  }
+
   if (extension === "json") {
     return "json";
   }
@@ -480,6 +489,8 @@ function getLanguageLabel(language) {
     css: "CSS",
     javascript: "JavaScript",
     python: "Python",
+    cpp: "C++",
+    csharp: "C#",
     json: "JSON",
     text: "Text",
   };
@@ -493,6 +504,8 @@ function getFileIconClass(language) {
     css: "tree-file__icon--css",
     javascript: "tree-file__icon--js",
     python: "tree-file__icon--python",
+    cpp: "tree-file__icon--cpp",
+    csharp: "tree-file__icon--csharp",
     json: "tree-file__icon--json",
     text: "tree-file__icon--text",
   };
@@ -611,6 +624,14 @@ function highlightCode(content, language) {
     return highlightPython(content);
   }
 
+  if (language === "cpp") {
+    return highlightCpp(content);
+  }
+
+  if (language === "csharp") {
+    return highlightCSharp(content);
+  }
+
   if (language === "json") {
     return highlightJson(content);
   }
@@ -687,6 +708,31 @@ function highlightJson(content) {
     { regex: /"[^"]*"/g, className: "token-string" },
     { regex: /\b(true|false|null)\b/g, className: "token-keyword" },
     { regex: /\b(\d+(?:\.\d+)?)\b/g, className: "token-number" },
+  ]);
+}
+
+function highlightCpp(content) {
+  const escaped = escapeHtml(content);
+
+  return tokenizePatterns(escaped, [
+    { regex: /\/\*[\s\S]*?\*\/|\/\/.*/g, className: "token-comment" },
+    { regex: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g, className: "token-string" },
+    { regex: /#[A-Za-z_]\w*/g, className: "token-atrule" },
+    { regex: /\b(class|struct|namespace|template|typename|using|return|if|else|for|while|switch|case|break|continue|public|private|protected|virtual|const|auto|void|int|double|float|char|bool|long|short|unsigned|signed|new|delete|try|catch|throw|nullptr|include|std)\b/g, className: "token-keyword" },
+    { regex: /\b(\d+(?:\.\d+)?)\b/g, className: "token-number" },
+    { regex: /\b([A-Za-z_][\w:]*)(?=\()/g, className: "token-function" },
+  ]);
+}
+
+function highlightCSharp(content) {
+  const escaped = escapeHtml(content);
+
+  return tokenizePatterns(escaped, [
+    { regex: /\/\*[\s\S]*?\*\/|\/\/.*/g, className: "token-comment" },
+    { regex: /@"[\s\S]*?"|"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g, className: "token-string" },
+    { regex: /\b(namespace|using|class|struct|interface|enum|public|private|protected|internal|static|void|string|int|double|float|decimal|bool|var|new|return|if|else|for|foreach|while|switch|case|break|continue|try|catch|finally|throw|null|true|false|async|await)\b/g, className: "token-keyword" },
+    { regex: /\b(\d+(?:\.\d+)?)\b/g, className: "token-number" },
+    { regex: /\b([A-Za-z_]\w*)(?=\()/g, className: "token-function" },
   ]);
 }
 
@@ -793,6 +839,8 @@ function renderEditor() {
     elements.currentFile.textContent = "No file selected";
     elements.currentLanguage.textContent = "Text";
     elements.charCount.textContent = "0 chars";
+    elements.runActiveFile.disabled = true;
+    elements.runActiveFile.textContent = "Run Active File";
     elements.debugFile.textContent = "No file selected";
     elements.debugLanguage.textContent = "Text";
     return;
@@ -811,6 +859,10 @@ function renderEditor() {
   elements.currentFile.textContent = getFileName(file.path);
   elements.currentLanguage.textContent = getLanguageLabel(file.language);
   elements.charCount.textContent = `${file.content.length} chars`;
+  elements.runActiveFile.disabled = !isOneCompilerRunnable(file.language);
+  elements.runActiveFile.textContent = isOneCompilerRunnable(file.language)
+    ? `Run ${getLanguageLabel(file.language)}`
+    : "Run Active File";
   elements.debugFile.textContent = file.path;
   elements.debugLanguage.textContent = getLanguageLabel(file.language);
   elements.debugFiles.textContent = String(state.files.length);
@@ -836,7 +888,7 @@ function renderChatPanel() {
   elements.openrouterApiKey.value = state.openrouterApiKey;
   elements.openrouterModel.value = state.openrouterModel;
   elements.onecompilerApiKey.value = state.onecompilerApiKey;
-  elements.onecompilerStatus.textContent = "Python runs use your deployed Vercel OneCompiler key.";
+  elements.onecompilerStatus.textContent = "Python, C++, and C# runs use your deployed Vercel OneCompiler key.";
 
   elements.chatList.innerHTML = messages.map((message) => `
     <article class="chat-message ${message.role === "assistant" ? "chat-message--assistant" : ""}">
@@ -1181,9 +1233,35 @@ async function fetchWithCurl(inputPath) {
   }
 }
 
-async function runPythonWithOneCompiler(filePath, stdin = "") {
+function getOneCompilerRuntimeForLanguage(language) {
+  const runtimes = {
+    python: {
+      command: "python",
+      label: "Python",
+      apiLanguage: "python",
+    },
+    cpp: {
+      command: "cpp",
+      label: "C++",
+      apiLanguage: "cpp",
+    },
+    csharp: {
+      command: "csharp",
+      label: "C#",
+      apiLanguage: "csharp",
+    },
+  };
+
+  return runtimes[language] || null;
+}
+
+function isOneCompilerRunnable(language) {
+  return Boolean(getOneCompilerRuntimeForLanguage(language));
+}
+
+async function runRemoteFileWithOneCompiler(filePath, expectedLanguage = "", stdin = "") {
   if (!filePath) {
-    pushTerminalLine("Usage: python <file.py> [--stdin text]", "accent");
+    pushTerminalLine("Usage: python <file.py> | cpp <file.cpp> | csharp <file.cs> [--stdin text]", "accent");
     return;
   }
 
@@ -1195,12 +1273,20 @@ async function runPythonWithOneCompiler(filePath, stdin = "") {
     return;
   }
 
-  if (file.language !== "python") {
-    pushTerminalLine(`Only Python files can be executed with OneCompiler: ${file.path}`, "accent");
+  const runtime = getOneCompilerRuntimeForLanguage(file.language);
+
+  if (!runtime) {
+    pushTerminalLine(`OneCompiler runs are available for Python, C++, and C#: ${file.path}`, "accent");
     return;
   }
 
-  pushTerminalLine(`Running ${file.path} on OneCompiler...`, "muted");
+  if (expectedLanguage && file.language !== expectedLanguage) {
+    const expectedRuntime = getOneCompilerRuntimeForLanguage(expectedLanguage);
+    pushTerminalLine(`Use ${expectedRuntime?.command || expectedLanguage} with a matching file type.`, "accent");
+    return;
+  }
+
+  pushTerminalLine(`Running ${file.path} on OneCompiler as ${runtime.label}...`, "muted");
 
   try {
     const response = await fetch("/api/run-python", {
@@ -1209,7 +1295,7 @@ async function runPythonWithOneCompiler(filePath, stdin = "") {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        language: "python",
+        language: runtime.apiLanguage,
         stdin,
         files: [
           {
@@ -1246,6 +1332,26 @@ async function runPythonWithOneCompiler(filePath, stdin = "") {
     pushTerminalLine(`OneCompiler request failed: ${message}`, "accent");
     pushLog("OneCompiler execution failed.", "error");
   }
+}
+
+async function runActiveEditorFile() {
+  const activeFile = getActiveFile();
+
+  if (!activeFile) {
+    pushTerminalLine("No active file selected.", "accent");
+    renderTerminal();
+    return;
+  }
+
+  if (!isOneCompilerRunnable(activeFile.language)) {
+    pushTerminalLine("Run supports Python, C++, and C# files.", "accent");
+    renderTerminal();
+    return;
+  }
+
+  await runRemoteFileWithOneCompiler(activeFile.path);
+  persistState();
+  renderAll();
 }
 
 function moveItemToPath(sourcePath, destinationPath) {
@@ -1384,11 +1490,15 @@ async function executeTerminalCommand(rawInput) {
   const [command, ...args] = input.split(/\s+/);
   const arg = args.join(" ");
   const stdinFlagIndex = args.indexOf("--stdin");
-  const pythonTargetArg = stdinFlagIndex >= 0 ? args.slice(0, stdinFlagIndex).join(" ") : arg;
-  const pythonStdinArg = stdinFlagIndex >= 0 ? args.slice(stdinFlagIndex + 1).join(" ") : "";
+  const languageTargetArg = stdinFlagIndex >= 0 ? args.slice(0, stdinFlagIndex).join(" ") : arg;
+  const languageStdinArg = stdinFlagIndex >= 0 ? args.slice(stdinFlagIndex + 1).join(" ") : "";
 
   if (command === "python" || command === "python3") {
-    await runPythonWithOneCompiler(pythonTargetArg || getActiveFile()?.path || "", pythonStdinArg);
+    await runRemoteFileWithOneCompiler(languageTargetArg || getActiveFile()?.path || "", "python", languageStdinArg);
+  } else if (command === "cpp" || command === "c++") {
+    await runRemoteFileWithOneCompiler(languageTargetArg || getActiveFile()?.path || "", "cpp", languageStdinArg);
+  } else if (command === "csharp" || command === "cs") {
+    await runRemoteFileWithOneCompiler(languageTargetArg || getActiveFile()?.path || "", "csharp", languageStdinArg);
   } else if (shellBackend.available && command !== "run" && command !== "help" && command !== "clear") {
     try {
       await executeBackendShellCommand(input);
@@ -1399,9 +1509,9 @@ async function executeTerminalCommand(rawInput) {
     }
   } else if (command === "help") {
     if (shellBackend.available) {
-      pushTerminalLine("Shell mode: most commands run in the Python backend. Local IDE commands: python <file.py> [--stdin text], run <file.js>, help, clear.", "muted");
+      pushTerminalLine("Shell mode: most commands run in the Python backend. Local IDE commands: python <file.py>, cpp <file.cpp>, csharp <file.cs>, run <file.js>, help, clear.", "muted");
     } else {
-      pushTerminalLine("Commands: help, ls, pwd, cd <folder>, cat <file>, open <file>, python <file.py> [--stdin text], run <file.js>, curl <url>, mkdir <folder>, touch <file>, cp <src> <dest>, mv <src> <dest>, rm <path>, clear", "muted");
+      pushTerminalLine("Commands: help, ls, pwd, cd <folder>, cat <file>, open <file>, python <file.py>, cpp <file.cpp>, csharp <file.cs>, run <file.js>, curl <url>, mkdir <folder>, touch <file>, cp <src> <dest>, mv <src> <dest>, rm <path>, clear", "muted");
     }
   } else if (command === "cd") {
     const targetPath = resolveTerminalPath(arg);
@@ -1757,6 +1867,39 @@ function createStarterContent(template, path) {
 };
 
 ${identifier}();`;
+  }
+
+  if (template === "py") {
+    return `def main():
+    print("${fileName} ready")
+
+
+if __name__ == "__main__":
+    main()
+`;
+  }
+
+  if (template === "cpp") {
+    return `#include <iostream>
+
+int main() {
+  std::cout << "${fileName} ready" << std::endl;
+  return 0;
+}
+`;
+  }
+
+  if (template === "cs") {
+    return `using System;
+
+class Program
+{
+    static void Main()
+    {
+        Console.WriteLine("${fileName} ready");
+    }
+}
+`;
   }
 
   return "";
@@ -2271,6 +2414,9 @@ elements.terminalForm.addEventListener("submit", (event) => {
   executeTerminalCommand(value);
 });
 
+elements.runActiveFile.addEventListener("click", () => {
+  runActiveEditorFile();
+});
 elements.saveWorkspace.addEventListener("click", saveSnapshot);
 elements.downloadFile.addEventListener("click", downloadActiveFile);
 elements.signOut.addEventListener("click", async () => {

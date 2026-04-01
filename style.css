@@ -626,9 +626,21 @@ body.git-collapsed .sidebar--right {
   background: linear-gradient(135deg, var(--accent-yellow), var(--accent-orange));
 }
 
+.tree-file__icon--python {
+  background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+}
+
+.tree-file__icon--cpp {
+  background: linear-gradient(135deg, #7dd3fc, #60a5fa);
+}
+
+.tree-file__icon--csharp {
+  background: linear-gradient(135deg, #c084fc, #a855f7);
+}
+
 .tree-file__icon--json,
 .tree-file__icon--text {
-  background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(127, 134, 170, 0.85));
 }
 
 .tree-empty {
@@ -705,6 +717,16 @@ body.git-collapsed .sidebar--right {
 .pill--accent {
   background: linear-gradient(135deg, rgba(255, 121, 198, 0.14), rgba(139, 233, 253, 0.12));
   color: var(--text-primary);
+}
+
+.pill--run {
+  background: linear-gradient(135deg, rgba(80, 250, 123, 0.18), rgba(139, 233, 253, 0.12));
+  color: var(--text-primary);
+}
+
+.pill--run:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .pill--tiny {

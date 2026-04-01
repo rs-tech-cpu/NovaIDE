@@ -110,13 +110,14 @@
           <div class="file-tree" data-tree></div>
         </div>
 
-        <input type="file" class="sr-only" data-file-input multiple accept=".html,.css,.js,.json,.txt,.md">
+        <input type="file" class="sr-only" data-file-input multiple accept=".html,.css,.js,.json,.txt,.md,.py,.cpp,.cc,.cxx,.cs">
       </aside>
 
       <section class="editor-pane glass" aria-label="Editor">
         <div class="editor-pane__header">
           <div class="editor-tabs" role="tablist" aria-label="Open files" data-editor-tabs></div>
           <div class="editor-actions">
+            <button class="pill pill--button pill--run" type="button" data-run-active-file>Run Active File</button>
             <button class="pill pill--button" type="button" data-save-workspace>Save Snapshot</button>
             <button class="pill pill--button pill--accent" type="button" data-download-file>Download File</button>
           </div>
@@ -188,7 +189,7 @@
             <span>OneCompiler via Vercel</span>
             <input class="field__input" type="password" placeholder="Configured in Vercel environment variables" data-onecompiler-api-key>
           </label>
-          <p class="assistant-note" data-onecompiler-status>Python runs use your deployed Vercel OneCompiler key.</p>
+          <p class="assistant-note" data-onecompiler-status>Python, C++, and C# runs use your deployed Vercel OneCompiler key.</p>
           <p class="assistant-note">Your OpenRouter key is stored only in this browser for this local demo.</p>
         </div>
 
@@ -233,7 +234,7 @@
               <form class="terminal__input-row" data-terminal-form>
                 <span class="prompt">workspace</span>
                 <span class="path" data-terminal-cwd>~/frontend</span>
-                <input class="terminal__input" type="text" autocomplete="off" spellcheck="false" placeholder="Try: python main.py, help, run scripts/reset-project.js" data-terminal-input>
+                <input class="terminal__input" type="text" autocomplete="off" spellcheck="false" placeholder="Try: python main.py, cpp main.cpp, csharp Program.cs, help" data-terminal-input>
               </form>
             </div>
           </div>
@@ -293,6 +294,9 @@
           <option value="html">HTML</option>
           <option value="css">CSS</option>
           <option value="js">JavaScript</option>
+          <option value="py">Python</option>
+          <option value="cpp">C++</option>
+          <option value="cs">C#</option>
           <option value="blank">Blank</option>
         </select>
       </label>
