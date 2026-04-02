@@ -33,7 +33,7 @@ function showAuthMessage(message, isError = false) {
 }
 
 function resetAuthMessage() {
-  authNote.textContent = "Sign in with the same Firebase email and password used on Pixel Wave.";
+  authNote.textContent = "Sign in using your Pixel Wave account credentials.";
   authNote.style.color = "";
 }
 
