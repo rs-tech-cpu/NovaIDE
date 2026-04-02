@@ -110,7 +110,7 @@
           <div class="file-tree" data-tree></div>
         </div>
 
-        <input type="file" class="sr-only" data-file-input multiple accept=".html,.css,.js,.json,.txt,.md,.py,.cpp,.cc,.cxx,.cs">
+        <input type="file" class="sr-only" data-file-input multiple accept=".html,.css,.js,.json,.txt,.md,.py,.cpp,.cc,.cxx,.cs,.swift,.java">
       </aside>
 
       <section class="editor-pane glass" aria-label="Editor">
@@ -189,7 +189,7 @@
             <span>OneCompiler via Vercel</span>
             <input class="field__input" type="password" placeholder="Configured in Vercel environment variables" data-onecompiler-api-key>
           </label>
-          <p class="assistant-note" data-onecompiler-status>Python, C++, and C# runs use your deployed Vercel OneCompiler key.</p>
+          <p class="assistant-note" data-onecompiler-status>Python, C++, C#, Swift, and Java runs use your deployed Vercel OneCompiler key.</p>
           <p class="assistant-note">Your OpenRouter key is stored only in this browser for this local demo.</p>
         </div>
 
@@ -234,7 +234,7 @@
               <form class="terminal__input-row" data-terminal-form>
                 <span class="prompt">workspace</span>
                 <span class="path" data-terminal-cwd>~/frontend</span>
-                <input class="terminal__input" type="text" autocomplete="off" spellcheck="false" placeholder="Try: python main.py, cpp main.cpp, csharp Program.cs, help" data-terminal-input>
+                <input class="terminal__input" type="text" autocomplete="off" spellcheck="false" placeholder="Try: python main.py, cpp main.cpp, csharp Program.cs, java Main.java, swift main.swift" data-terminal-input>
               </form>
             </div>
           </div>
@@ -297,6 +297,8 @@
           <option value="py">Python</option>
           <option value="cpp">C++</option>
           <option value="cs">C#</option>
+          <option value="swift">Swift</option>
+          <option value="java">Java</option>
           <option value="blank">Blank</option>
         </select>
       </label>

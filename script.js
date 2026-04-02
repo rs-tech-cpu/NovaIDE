@@ -420,6 +420,14 @@ function inferLanguage(path) {
     return "csharp";
   }
 
+  if (extension === "swift") {
+    return "swift";
+  }
+
+  if (extension === "java") {
+    return "java";
+  }
+
   if (extension === "json") {
     return "json";
   }
@@ -491,6 +499,8 @@ function getLanguageLabel(language) {
     python: "Python",
     cpp: "C++",
     csharp: "C#",
+    swift: "Swift",
+    java: "Java",
     json: "JSON",
     text: "Text",
   };
@@ -506,6 +516,8 @@ function getFileIconClass(language) {
     python: "tree-file__icon--python",
     cpp: "tree-file__icon--cpp",
     csharp: "tree-file__icon--csharp",
+    swift: "tree-file__icon--swift",
+    java: "tree-file__icon--java",
     json: "tree-file__icon--json",
     text: "tree-file__icon--text",
   };
@@ -632,6 +644,14 @@ function highlightCode(content, language) {
     return highlightCSharp(content);
   }
 
+  if (language === "swift") {
+    return highlightSwift(content);
+  }
+
+  if (language === "java") {
+    return highlightJava(content);
+  }
+
   if (language === "json") {
     return highlightJson(content);
   }
@@ -731,6 +751,30 @@ function highlightCSharp(content) {
     { regex: /\/\*[\s\S]*?\*\/|\/\/.*/g, className: "token-comment" },
     { regex: /@"[\s\S]*?"|"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g, className: "token-string" },
     { regex: /\b(namespace|using|class|struct|interface|enum|public|private|protected|internal|static|void|string|int|double|float|decimal|bool|var|new|return|if|else|for|foreach|while|switch|case|break|continue|try|catch|finally|throw|null|true|false|async|await)\b/g, className: "token-keyword" },
+    { regex: /\b(\d+(?:\.\d+)?)\b/g, className: "token-number" },
+    { regex: /\b([A-Za-z_]\w*)(?=\()/g, className: "token-function" },
+  ]);
+}
+
+function highlightSwift(content) {
+  const escaped = escapeHtml(content);
+
+  return tokenizePatterns(escaped, [
+    { regex: /\/\*[\s\S]*?\*\/|\/\/.*/g, className: "token-comment" },
+    { regex: /#?"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g, className: "token-string" },
+    { regex: /\b(import|class|struct|enum|protocol|extension|func|let|var|if|else|guard|for|while|switch|case|break|continue|return|throw|throws|do|catch|try|nil|true|false)\b/g, className: "token-keyword" },
+    { regex: /\b(\d+(?:\.\d+)?)\b/g, className: "token-number" },
+    { regex: /\b([A-Za-z_]\w*)(?=\()/g, className: "token-function" },
+  ]);
+}
+
+function highlightJava(content) {
+  const escaped = escapeHtml(content);
+
+  return tokenizePatterns(escaped, [
+    { regex: /\/\*[\s\S]*?\*\/|\/\/.*/g, className: "token-comment" },
+    { regex: /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g, className: "token-string" },
+    { regex: /\b(package|import|class|interface|enum|public|private|protected|static|final|void|String|int|double|float|boolean|new|return|if|else|for|while|switch|case|break|continue|try|catch|finally|throw|null|true|false)\b/g, className: "token-keyword" },
     { regex: /\b(\d+(?:\.\d+)?)\b/g, className: "token-number" },
     { regex: /\b([A-Za-z_]\w*)(?=\()/g, className: "token-function" },
   ]);
@@ -888,7 +932,7 @@ function renderChatPanel() {
   elements.openrouterApiKey.value = state.openrouterApiKey;
   elements.openrouterModel.value = state.openrouterModel;
   elements.onecompilerApiKey.value = state.onecompilerApiKey;
-  elements.onecompilerStatus.textContent = "Python, C++, and C# runs use your deployed Vercel OneCompiler key.";
+  elements.onecompilerStatus.textContent = "Python, C++, C#, Swift, and Java runs use your deployed Vercel OneCompiler key.";
 
   elements.chatList.innerHTML = messages.map((message) => `
     <article class="chat-message ${message.role === "assistant" ? "chat-message--assistant" : ""}">
@@ -1250,6 +1294,16 @@ function getOneCompilerRuntimeForLanguage(language) {
       label: "C#",
       apiLanguage: "csharp",
     },
+    swift: {
+      command: "swift",
+      label: "Swift",
+      apiLanguage: "swift",
+    },
+    java: {
+      command: "java",
+      label: "Java",
+      apiLanguage: "java",
+    },
   };
 
   return runtimes[language] || null;
@@ -1276,7 +1330,7 @@ async function runRemoteFileWithOneCompiler(filePath, expectedLanguage = "", std
   const runtime = getOneCompilerRuntimeForLanguage(file.language);
 
   if (!runtime) {
-    pushTerminalLine(`OneCompiler runs are available for Python, C++, and C#: ${file.path}`, "accent");
+    pushTerminalLine(`OneCompiler runs are available for Python, C++, C#, Swift, and Java: ${file.path}`, "accent");
     return;
   }
 
@@ -1344,7 +1398,7 @@ async function runActiveEditorFile() {
   }
 
   if (!isOneCompilerRunnable(activeFile.language)) {
-    pushTerminalLine("Run supports Python, C++, and C# files.", "accent");
+    pushTerminalLine("Run supports Python, C++, C#, Swift, and Java files.", "accent");
     renderTerminal();
     return;
   }
@@ -1499,6 +1553,10 @@ async function executeTerminalCommand(rawInput) {
     await runRemoteFileWithOneCompiler(languageTargetArg || getActiveFile()?.path || "", "cpp", languageStdinArg);
   } else if (command === "csharp" || command === "cs") {
     await runRemoteFileWithOneCompiler(languageTargetArg || getActiveFile()?.path || "", "csharp", languageStdinArg);
+  } else if (command === "swift") {
+    await runRemoteFileWithOneCompiler(languageTargetArg || getActiveFile()?.path || "", "swift", languageStdinArg);
+  } else if (command === "java") {
+    await runRemoteFileWithOneCompiler(languageTargetArg || getActiveFile()?.path || "", "java", languageStdinArg);
   } else if (shellBackend.available && command !== "run" && command !== "help" && command !== "clear") {
     try {
       await executeBackendShellCommand(input);
@@ -1509,9 +1567,9 @@ async function executeTerminalCommand(rawInput) {
     }
   } else if (command === "help") {
     if (shellBackend.available) {
-      pushTerminalLine("Shell mode: most commands run in the Python backend. Local IDE commands: python <file.py>, cpp <file.cpp>, csharp <file.cs>, run <file.js>, help, clear.", "muted");
+      pushTerminalLine("Shell mode: most commands run in the Python backend. Local IDE commands: python <file.py>, cpp <file.cpp>, csharp <file.cs>, swift <file.swift>, java <file.java>, run <file.js>, help, clear.", "muted");
     } else {
-      pushTerminalLine("Commands: help, ls, pwd, cd <folder>, cat <file>, open <file>, python <file.py>, cpp <file.cpp>, csharp <file.cs>, run <file.js>, curl <url>, mkdir <folder>, touch <file>, cp <src> <dest>, mv <src> <dest>, rm <path>, clear", "muted");
+      pushTerminalLine("Commands: help, ls, pwd, cd <folder>, cat <file>, open <file>, python <file.py>, cpp <file.cpp>, csharp <file.cs>, swift <file.swift>, java <file.java>, run <file.js>, curl <url>, mkdir <folder>, touch <file>, cp <src> <dest>, mv <src> <dest>, rm <path>, clear", "muted");
     }
   } else if (command === "cd") {
     const targetPath = resolveTerminalPath(arg);
@@ -1898,6 +1956,22 @@ class Program
     {
         Console.WriteLine("${fileName} ready");
     }
+}
+`;
+  }
+
+  if (template === "swift") {
+    return `import Foundation
+
+print("${fileName} ready")
+`;
+  }
+
+  if (template === "java") {
+    return `class Main {
+  public static void main(String[] args) {
+    System.out.println("${fileName} ready");
+  }
 }
 `;
   }

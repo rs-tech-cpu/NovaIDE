@@ -638,6 +638,14 @@ body.git-collapsed .sidebar--right {
   background: linear-gradient(135deg, #c084fc, #a855f7);
 }
 
+.tree-file__icon--swift {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+}
+
+.tree-file__icon--java {
+  background: linear-gradient(135deg, #facc15, #f59e0b);
+}
+
 .tree-file__icon--json,
 .tree-file__icon--text {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(127, 134, 170, 0.85));
