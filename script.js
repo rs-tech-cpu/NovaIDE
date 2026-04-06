@@ -2472,7 +2472,7 @@ elements.chatClear.addEventListener("click", () => {
   state.chatMessages = [
     {
       role: "assistant",
-      content: "Chat cleared. Ask a new question whenever you're ready.",
+      content: "Ask a new question whenever you're ready.",
     },
   ];
   persistState();
