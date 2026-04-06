@@ -1170,16 +1170,15 @@ body.terminal-collapsed .bottom-panel {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  flex: 0 0 auto;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   margin-top: 0;
 }
 
 .chat-toolbar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+  gap: 12px;
   margin-top: 12px;
   padding: 10px 12px;
   border-radius: 18px;
@@ -1217,7 +1216,7 @@ body.terminal-collapsed .bottom-panel {
 }
 
 .assistant-actions .pill--button {
-  min-width: 82px;
+  min-width: 90px;
 }
 
 .chat-toolbar__select:focus {
