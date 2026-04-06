@@ -20,6 +20,7 @@ const googleLoginButton = document.querySelector("[data-google-login]");
 const earlyAccessGate = document.querySelector("[data-early-access-gate]");
 const earlyAccessMessage = document.querySelector("[data-early-access-message]");
 const earlyAccessSignOut = document.querySelector("[data-early-access-signout]");
+const APPROVED_ACCESS_KEY = "novaide-approved-email";
 
 const scriptLoaders = {};
 let authInstance = null;
@@ -80,6 +81,14 @@ function renderAccessState(user) {
   closeAuthModal();
   const firstName = getDisplayName(user);
   earlyAccessMessage.textContent = `${firstName}, your account is signed in, but Nova early access is not enabled yet. Join the waitlist below and we’ll contact you when access opens.`;
+}
+
+function clearApprovedAccess() {
+  window.sessionStorage.removeItem(APPROVED_ACCESS_KEY);
+}
+
+function rememberApprovedAccess(email) {
+  window.sessionStorage.setItem(APPROVED_ACCESS_KEY, String(email || "").trim().toLowerCase());
 }
 
 async function fetchEarlyAccessStatus(email) {
@@ -189,7 +198,14 @@ async function monitorAuthenticatedUser() {
       accessRequestToken = requestToken;
 
       if (!user) {
+        clearApprovedAccess();
         renderAccessState(null);
+        return;
+      }
+
+      const normalizedEmail = String(user.email || "").trim().toLowerCase();
+      if (window.sessionStorage.getItem(APPROVED_ACCESS_KEY) === normalizedEmail) {
+        window.location.href = "index.html";
         return;
       }
 
@@ -206,10 +222,12 @@ async function monitorAuthenticatedUser() {
         }
 
         if (result.approved) {
+          rememberApprovedAccess(normalizedEmail);
           window.location.href = "index.html";
           return;
         }
 
+        clearApprovedAccess();
         renderAccessState(user);
         if (result.reason) {
           earlyAccessMessage.textContent = result.reason;
@@ -219,6 +237,7 @@ async function monitorAuthenticatedUser() {
           return;
         }
 
+        clearApprovedAccess();
         renderAccessState(user);
         earlyAccessMessage.textContent = "We could not verify your early access yet. Please join the waitlist below and try again later.";
       }
@@ -277,6 +296,8 @@ if (googleLoginButton) {
 
 if (earlyAccessSignOut) {
   earlyAccessSignOut.addEventListener("click", async () => {
+    accessRequestToken += 1;
+    clearApprovedAccess();
     try {
       const auth = await ensureFirebaseAuth();
       await auth.signOut();

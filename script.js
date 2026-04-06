@@ -1,7 +1,7 @@
 const STORAGE_KEY = "novaide-workspace-v2";
 const WORKSPACE_VERSION = 4;
 const DEFAULT_BACKEND_PORT = 8765;
-const EARLY_ACCESS_ENABLED = false;
+const APPROVED_ACCESS_KEY = "novaide-approved-email";
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAUbyQlVd8ElTbez7TAddtqc_fPXIQARPE",
   authDomain: "pixelchat-82d61.firebaseapp.com",
@@ -357,6 +357,27 @@ async function ensureFirebaseAuth() {
 
   authInstance = firebase.auth();
   return authInstance;
+}
+
+async function fetchEarlyAccessStatus(email) {
+  const response = await fetch(`/api/check-access?email=${encodeURIComponent(email)}`, {
+    cache: "no-store",
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || `Access check failed with ${response.status}`);
+  }
+
+  return data;
+}
+
+function clearApprovedAccess() {
+  window.sessionStorage.removeItem(APPROVED_ACCESS_KEY);
+}
+
+function rememberApprovedAccess(email) {
+  window.sessionStorage.setItem(APPROVED_ACCESS_KEY, String(email || "").trim().toLowerCase());
 }
 
 function applyAuthenticatedUser(user) {
@@ -2495,6 +2516,7 @@ elements.runActiveFile.addEventListener("click", () => {
 elements.saveWorkspace.addEventListener("click", saveSnapshot);
 elements.downloadFile.addEventListener("click", downloadActiveFile);
 elements.signOut.addEventListener("click", async () => {
+  clearApprovedAccess();
   try {
     const auth = await ensureFirebaseAuth();
     await auth.signOut();
@@ -2563,13 +2585,32 @@ document.addEventListener("click", (event) => {
 
 ensureFirebaseAuth()
   .then((auth) => {
-    auth.onAuthStateChanged((user) => {
-      if (user && !EARLY_ACCESS_ENABLED) {
-        window.location.href = "home.html";
+    auth.onAuthStateChanged(async (user) => {
+      if (!applyAuthenticatedUser(user)) {
+        clearApprovedAccess();
         return;
       }
 
-      if (!applyAuthenticatedUser(user)) {
+      const normalizedEmail = String(user.email || "").trim().toLowerCase();
+      const rememberedEmail = window.sessionStorage.getItem(APPROVED_ACCESS_KEY);
+
+      if (rememberedEmail === normalizedEmail) {
+        renderAll();
+        checkShellBackend();
+        return;
+      }
+
+      try {
+        const result = await fetchEarlyAccessStatus(normalizedEmail);
+        if (!result.approved) {
+          clearApprovedAccess();
+          window.location.href = "home.html";
+          return;
+        }
+        rememberApprovedAccess(normalizedEmail);
+      } catch (error) {
+        clearApprovedAccess();
+        window.location.href = "home.html";
         return;
       }
 
