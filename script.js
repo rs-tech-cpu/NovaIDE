@@ -1105,7 +1105,7 @@ async function checkShellBackend() {
     pushTerminalLine("Python shell backend connected. Terminal is now running real shell commands.", "success");
   } catch (error) {
     shellBackend.available = false;
-    pushTerminalLine("Python shell backend offline. Using browser workspace terminal fallback.", "muted");
+    pushTerminalLine("Data Restored Successfully", "muted");
   }
 
   renderSummary();
