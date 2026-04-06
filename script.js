@@ -184,11 +184,11 @@ function createDefaultState() {
     chatMessages: [
       {
         role: "assistant",
-        content: "I can answer questions about your workspace once you add your OpenRouter API key.",
+        content: "I can answer questions about your workspace using the deployed OpenAI assistant.",
       },
     ],
     openrouterApiKey: "",
-    openrouterModel: "openai/gpt-5.2",
+    openrouterModel: "gpt-5",
     onecompilerApiKey: "",
     collapsedFolders: [],
     logs: [
@@ -255,7 +255,7 @@ function loadState() {
         ? parsed.chatMessages.slice(-12)
         : createDefaultState().chatMessages,
       openrouterApiKey: typeof parsed.openrouterApiKey === "string" ? parsed.openrouterApiKey : "",
-      openrouterModel: typeof parsed.openrouterModel === "string" && parsed.openrouterModel ? parsed.openrouterModel : "openai/gpt-5.2",
+      openrouterModel: typeof parsed.openrouterModel === "string" && parsed.openrouterModel ? parsed.openrouterModel : "gpt-5",
       onecompilerApiKey: typeof parsed.onecompilerApiKey === "string" ? parsed.onecompilerApiKey : "",
       collapsedFolders: Array.isArray(parsed.collapsedFolders) ? parsed.collapsedFolders : [],
       logs: Array.isArray(parsed.logs) && parsed.logs.length
@@ -950,8 +950,8 @@ function renderEditor() {
 function renderChatPanel() {
   const messages = state.chatMessages.slice(-12);
   elements.chatCount.textContent = `${messages.length} msgs`;
-  elements.chatStatus.textContent = state.openrouterApiKey ? "Connected" : "API key needed";
-  elements.openrouterApiKey.value = state.openrouterApiKey;
+  elements.chatStatus.textContent = elements.chatSend.disabled ? "Thinking" : "Ready";
+  elements.openrouterApiKey.value = "Configured in Vercel environment variables";
   elements.openrouterModel.value = state.openrouterModel;
   elements.onecompilerApiKey.value = state.onecompilerApiKey;
   elements.onecompilerStatus.textContent = "Python, C++, C#, Swift, and Java runs use your deployed Vercel OneCompiler key.";
@@ -1793,13 +1793,7 @@ function extractResponseText(data) {
 }
 
 async function sendChatMessage() {
-  const apiKey = state.openrouterApiKey.trim();
   const prompt = elements.chatInput.value.trim();
-
-  if (!apiKey) {
-    window.alert("Add your OpenRouter API key in the ChatGPT panel first.");
-    return;
-  }
 
   if (!prompt) {
     return;
@@ -1815,40 +1809,28 @@ async function sendChatMessage() {
   renderChatPanel();
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetch("/api/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": window.location.href,
-        "X-Title": "NovaIDE Workspace Assistant",
       },
       body: JSON.stringify({
-        model: state.openrouterModel || "openai/gpt-5.2",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful coding assistant inside a browser IDE. Use the provided workspace context to answer questions clearly and practically.",
-          },
-          {
-            role: "user",
-            content: `${buildWorkspaceContext()}\n\nUser request:\n${prompt}`,
-          },
-        ],
+        model: state.openrouterModel || "gpt-5",
+        prompt,
+        workspaceContext: buildWorkspaceContext(),
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || `Request failed with ${response.status}`);
+      throw new Error(data.error || `Request failed with ${response.status}`);
     }
 
-    const data = await response.json();
-    const assistantText = data.choices?.[0]?.message?.content || "I could not parse a reply from the API.";
+    const assistantText = data.output_text || "I could not parse a reply from the API.";
     state.chatMessages.push({ role: "assistant", content: assistantText });
     state.chatMessages = state.chatMessages.slice(-12);
-    state.chatStatus = "Connected";
-    pushLog("ChatGPT responded using current IDE context.", "info");
+    pushLog("ChatGPT responded using the deployed OpenAI assistant.", "info");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     state.chatMessages.push({ role: "assistant", content: `Request failed: ${message}` });
@@ -2472,13 +2454,8 @@ elements.createFolder.addEventListener("click", () => {
 elements.duplicateItem.addEventListener("click", duplicateSelectedFile);
 elements.moveItem.addEventListener("click", moveSelectedItem);
 elements.deleteItem.addEventListener("click", deleteSelectedItem);
-elements.openrouterApiKey.addEventListener("input", (event) => {
-  state.openrouterApiKey = event.target.value.trim();
-  persistState();
-  renderChatPanel();
-});
 elements.openrouterModel.addEventListener("input", (event) => {
-  state.openrouterModel = event.target.value.trim() || "openai/gpt-5.2";
+  state.openrouterModel = event.target.value.trim() || "gpt-5";
   persistState();
 });
 elements.onecompilerApiKey.addEventListener("input", (event) => {
