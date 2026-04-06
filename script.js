@@ -2,6 +2,7 @@ const STORAGE_KEY = "novaide-workspace-v2";
 const WORKSPACE_VERSION = 4;
 const DEFAULT_BACKEND_PORT = 8765;
 const APPROVED_ACCESS_KEY = "novaide-approved-email";
+const SUPPORTED_CHAT_MODELS = ["gpt-5.4", "gpt-5", "gpt-4.1"];
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAUbyQlVd8ElTbez7TAddtqc_fPXIQARPE",
   authDomain: "pixelchat-82d61.firebaseapp.com",
@@ -36,10 +37,7 @@ const elements = {
   chatCount: document.querySelector("[data-chat-count]"),
   chatList: document.querySelector("[data-chat-list]"),
   chatInput: document.querySelector("[data-chat-input]"),
-  openrouterApiKey: document.querySelector("[data-openrouter-api-key]"),
-  openrouterModel: document.querySelector("[data-openrouter-model]"),
-  onecompilerApiKey: document.querySelector("[data-onecompiler-api-key]"),
-  onecompilerStatus: document.querySelector("[data-onecompiler-status]"),
+  chatModel: document.querySelector("[data-chat-model]"),
   chatSend: document.querySelector("[data-chat-send]"),
   chatClear: document.querySelector("[data-chat-clear]"),
   terminalOutput: document.querySelector("[data-terminal-output]"),
@@ -138,6 +136,17 @@ function createStarterWorkspace() {
   };
 }
 
+function normalizeChatModel(model) {
+  const raw = String(model || "").trim();
+  const normalized = raw.replace(/^openai\//i, "");
+
+  if (SUPPORTED_CHAT_MODELS.includes(normalized)) {
+    return normalized;
+  }
+
+  return "gpt-5.4";
+}
+
 function ensureWorkspaceUpgradeFiles(files, storedVersion = 0) {
   const nextFiles = [...files];
 
@@ -187,9 +196,7 @@ function createDefaultState() {
         content: "I can answer questions about your workspace using the deployed OpenAI assistant.",
       },
     ],
-    openrouterApiKey: "",
-    openrouterModel: "gpt-5",
-    onecompilerApiKey: "",
+    openrouterModel: "gpt-5.4",
     collapsedFolders: [],
     logs: [
       createLogEntry("Workspace booted with a blank HTML, CSS, and JavaScript starter.", "info"),
@@ -254,9 +261,7 @@ function loadState() {
       chatMessages: Array.isArray(parsed.chatMessages) && parsed.chatMessages.length
         ? parsed.chatMessages.slice(-12)
         : createDefaultState().chatMessages,
-      openrouterApiKey: typeof parsed.openrouterApiKey === "string" ? parsed.openrouterApiKey : "",
-      openrouterModel: typeof parsed.openrouterModel === "string" && parsed.openrouterModel ? parsed.openrouterModel : "gpt-5",
-      onecompilerApiKey: typeof parsed.onecompilerApiKey === "string" ? parsed.onecompilerApiKey : "",
+      openrouterModel: normalizeChatModel(parsed.openrouterModel),
       collapsedFolders: Array.isArray(parsed.collapsedFolders) ? parsed.collapsedFolders : [],
       logs: Array.isArray(parsed.logs) && parsed.logs.length
         ? parsed.logs.slice(0, 18)
@@ -951,10 +956,7 @@ function renderChatPanel() {
   const messages = state.chatMessages.slice(-12);
   elements.chatCount.textContent = `${messages.length} msgs`;
   elements.chatStatus.textContent = elements.chatSend.disabled ? "Thinking" : "Ready";
-  elements.openrouterApiKey.value = "Configured in Vercel environment variables";
-  elements.openrouterModel.value = state.openrouterModel;
-  elements.onecompilerApiKey.value = state.onecompilerApiKey;
-  elements.onecompilerStatus.textContent = "Python, C++, C#, Swift, and Java runs use your deployed Vercel OneCompiler key.";
+  elements.chatModel.value = normalizeChatModel(state.openrouterModel);
 
   elements.chatList.innerHTML = messages.map((message) => `
     <article class="chat-message ${message.role === "assistant" ? "chat-message--assistant" : ""}">
@@ -1815,7 +1817,7 @@ async function sendChatMessage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: state.openrouterModel || "gpt-5",
+        model: normalizeChatModel(state.openrouterModel),
         prompt,
         workspaceContext: buildWorkspaceContext(),
       }),
@@ -2454,12 +2456,8 @@ elements.createFolder.addEventListener("click", () => {
 elements.duplicateItem.addEventListener("click", duplicateSelectedFile);
 elements.moveItem.addEventListener("click", moveSelectedItem);
 elements.deleteItem.addEventListener("click", deleteSelectedItem);
-elements.openrouterModel.addEventListener("input", (event) => {
-  state.openrouterModel = event.target.value.trim() || "gpt-5";
-  persistState();
-});
-elements.onecompilerApiKey.addEventListener("input", (event) => {
-  state.onecompilerApiKey = event.target.value.trim();
+elements.chatModel.addEventListener("change", (event) => {
+  state.openrouterModel = normalizeChatModel(event.target.value);
   persistState();
   renderChatPanel();
 });

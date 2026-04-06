@@ -165,33 +165,7 @@
             <p class="eyebrow">Workspace Assistant</p>
             <h2>ChatGPT</h2>
           </div>
-        </div>
-
-        <div class="panel-card panel-card--accent">
-          <div class="branch-card">
-            <div>
-              <p class="branch-card__label">API Setup</p>
-              <h3>OpenAI via Vercel</h3>
-            </div>
-            <span class="branch-badge" data-chat-status>Idle</span>
-          </div>
-        </div>
-
-        <div class="panel-card">
-          <label class="field field--compact">
-            <span>OpenAI API key</span>
-            <input class="field__input" type="password" value="Configured in Vercel environment variables" readonly data-openrouter-api-key>
-          </label>
-          <label class="field field--compact">
-            <span>Model</span>
-            <input class="field__input" type="text" value="gpt-5" data-openrouter-model>
-          </label>
-          <label class="field field--compact">
-            <span>OneCompiler via Vercel</span>
-            <input class="field__input" type="password" placeholder="Configured in Vercel environment variables" data-onecompiler-api-key>
-          </label>
-          <p class="assistant-note" data-onecompiler-status>Python, C++, C#, Swift, and Java runs use your deployed Vercel OneCompiler key.</p>
-          <p class="assistant-note">Chat requests are sent through the Vercel `/api/chat` function using your `OPENAI_API_KEY` environment variable.</p>
+          <span class="branch-badge" data-chat-status>Ready</span>
         </div>
 
         <div class="panel-card panel-card--stretch">
@@ -204,9 +178,19 @@
             <span>Ask about this IDE workspace</span>
             <textarea class="field__input field__input--textarea" placeholder="Ask ChatGPT to explain, refactor, debug, or plan using the current files..." data-chat-input></textarea>
           </label>
-          <div class="assistant-actions">
-            <button class="pill pill--button" type="button" data-chat-clear>Clear</button>
-            <button class="pill pill--button pill--accent" type="button" data-chat-send>Send</button>
+          <div class="chat-toolbar">
+            <label class="chat-toolbar__group" aria-label="Select model">
+              <span class="chat-toolbar__label">Model</span>
+              <select class="chat-toolbar__select" data-chat-model>
+                <option value="gpt-5.4">GPT-5.4</option>
+                <option value="gpt-5">GPT-5</option>
+                <option value="gpt-4.1">GPT-4.1</option>
+              </select>
+            </label>
+            <div class="assistant-actions">
+              <button class="pill pill--button" type="button" data-chat-clear>Clear</button>
+              <button class="pill pill--button pill--accent" type="button" data-chat-send>Send</button>
+            </div>
           </div>
         </div>
       </aside>
