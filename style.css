@@ -1170,13 +1170,15 @@ body.terminal-collapsed .bottom-panel {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   margin-top: 0;
 }
 
 .chat-toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 14px;
   margin-top: 12px;
   padding: 10px 12px;
@@ -1186,7 +1188,8 @@ body.terminal-collapsed .bottom-panel {
 }
 
 .chat-toolbar__group {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -1200,7 +1203,8 @@ body.terminal-collapsed .bottom-panel {
 }
 
 .chat-toolbar__select {
-  min-width: 120px;
+  width: 100%;
+  min-width: 0;
   height: 40px;
   border: 0;
   border-radius: 12px;
@@ -1209,6 +1213,11 @@ body.terminal-collapsed .bottom-panel {
   padding: 0 14px;
   font: inherit;
   outline: none;
+  appearance: none;
+}
+
+.assistant-actions .pill--button {
+  min-width: 82px;
 }
 
 .chat-toolbar__select:focus {
@@ -1398,7 +1407,7 @@ body.terminal-collapsed .bottom-panel {
   }
 
   .chat-toolbar {
-    flex-direction: column;
+    grid-template-columns: 1fr;
     align-items: stretch;
   }
 
