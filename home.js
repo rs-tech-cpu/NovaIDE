@@ -17,6 +17,8 @@ const authPassword = document.querySelector("[data-auth-password]");
 const authNote = document.querySelector("[data-auth-note]");
 const authCloseButtons = document.querySelectorAll("[data-close-auth]");
 const googleLoginButton = document.querySelector("[data-google-login]");
+const earlyAccessGate = document.querySelector("[data-early-access-gate]");
+const earlyAccessMessage = document.querySelector("[data-early-access-message]");
 
 const scriptLoaders = {};
 let authInstance = null;
@@ -47,6 +49,35 @@ function closeAuthModal() {
   authModal.hidden = true;
   authForm.reset();
   resetAuthMessage();
+}
+
+function getDisplayName(user) {
+  if (user?.displayName) {
+    return user.displayName.split(" ")[0];
+  }
+
+  if (user?.email && user.email.includes("@")) {
+    const emailPrefix = user.email.split("@")[0];
+    const rawName = emailPrefix.split(/[\._-]/)[0];
+    return rawName.charAt(0).toUpperCase() + rawName.slice(1);
+  }
+
+  return "Developer";
+}
+
+function renderAccessState(user) {
+  const hasUser = Boolean(user);
+
+  homeShell.classList.toggle("is-access-blocked", hasUser);
+  earlyAccessGate.hidden = !hasUser;
+
+  if (!hasUser) {
+    return;
+  }
+
+  closeAuthModal();
+  const firstName = getDisplayName(user);
+  earlyAccessMessage.textContent = `${firstName}, your account is signed in, but Nova early access is not enabled yet. Join the waitlist below and we’ll contact you when access opens.`;
 }
 
 function loadExternalScript(src) {
@@ -134,13 +165,11 @@ function getAuthErrorMessage(error) {
   }
 }
 
-async function redirectIfAuthenticated() {
+async function monitorAuthenticatedUser() {
   try {
     const auth = await ensureFirebaseAuth();
     auth.onAuthStateChanged((user) => {
-      if (user) {
-        window.location.href = "index.html";
-      }
+      renderAccessState(user);
     });
   } catch (error) {
     resetAuthMessage();
@@ -174,8 +203,7 @@ if (authForm) {
     try {
       const auth = await ensureFirebaseAuth();
       await auth.signInWithEmailAndPassword(email, password);
-      showAuthMessage("Signed in. Opening Nova IDE...");
-      window.location.href = "index.html";
+      showAuthMessage("Signed in. Checking Nova access...");
     } catch (error) {
       showAuthMessage(getAuthErrorMessage(error), true);
     }
@@ -188,8 +216,7 @@ if (googleLoginButton) {
       const auth = await ensureFirebaseAuth();
       const provider = new firebase.auth.GoogleAuthProvider();
       await auth.signInWithPopup(provider);
-      showAuthMessage("Signed in with Google. Opening Nova IDE...");
-      window.location.href = "index.html";
+      showAuthMessage("Signed in with Google. Checking Nova access...");
     } catch (error) {
       showAuthMessage(getAuthErrorMessage(error), true);
     }
@@ -203,4 +230,4 @@ window.addEventListener("keydown", (event) => {
 });
 
 resetAuthMessage();
-redirectIfAuthenticated();
+monitorAuthenticatedUser();

@@ -72,6 +72,10 @@ a {
   margin: 0 auto;
 }
 
+.home-shell.is-access-blocked .home-hero {
+  display: none;
+}
+
 .home-nav {
   display: flex;
   align-items: center;
@@ -227,6 +231,72 @@ a {
 
 .home-shell--entered .home-showcase {
   animation: homeFloat 420ms ease;
+}
+
+.early-access-gate {
+  display: grid;
+  justify-items: center;
+  gap: 26px;
+  padding: 72px 0 56px;
+  text-align: center;
+}
+
+.early-access-gate__copy {
+  max-width: 760px;
+}
+
+.early-access-gate__copy h2 {
+  margin: 10px 0 12px;
+  font-size: clamp(2.3rem, 4.5vw, 4.2rem);
+  line-height: 1;
+  letter-spacing: -0.05em;
+}
+
+.early-access-gate__message {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+.waitlist-embed {
+  position: relative;
+  width: min(100%, 640px);
+  padding: 28px;
+}
+
+.waitlist-embed__glow {
+  position: absolute;
+  inset: 8% -8%;
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 30% 40%, rgba(251, 146, 60, 0.28), transparent 36%),
+    radial-gradient(circle at 68% 68%, rgba(189, 147, 249, 0.26), transparent 34%),
+    radial-gradient(circle at 70% 28%, rgba(255, 121, 198, 0.2), transparent 28%);
+  filter: blur(54px);
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.waitlist-embed__frame {
+  position: relative;
+  z-index: 1;
+  padding: 18px;
+  border: 1px solid rgba(251, 146, 60, 0.42);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(18, 18, 22, 0.96), rgba(18, 18, 22, 0.86));
+  box-shadow: 0 36px 70px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.waitlist-embed__iframe {
+  display: block;
+  width: 100%;
+  height: min(72vh, 760px);
+  border: 0;
+  border-radius: 18px;
+  background: #111;
 }
 
 .auth-modal {
@@ -388,6 +458,22 @@ a {
 
   .home-copy h1 {
     font-size: clamp(3rem, 12vw, 5rem);
+  }
+
+  .early-access-gate {
+    padding: 44px 0 28px;
+  }
+
+  .waitlist-embed {
+    padding: 12px 0 0;
+  }
+
+  .waitlist-embed__frame {
+    padding: 12px;
+  }
+
+  .waitlist-embed__iframe {
+    height: 68vh;
   }
 }
 

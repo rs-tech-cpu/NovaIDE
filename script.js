@@ -1,6 +1,7 @@
 const STORAGE_KEY = "novaide-workspace-v2";
 const WORKSPACE_VERSION = 4;
 const DEFAULT_BACKEND_PORT = 8765;
+const EARLY_ACCESS_ENABLED = false;
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAUbyQlVd8ElTbez7TAddtqc_fPXIQARPE",
   authDomain: "pixelchat-82d61.firebaseapp.com",
@@ -2563,6 +2564,11 @@ document.addEventListener("click", (event) => {
 ensureFirebaseAuth()
   .then((auth) => {
     auth.onAuthStateChanged((user) => {
+      if (user && !EARLY_ACCESS_ENABLED) {
+        window.location.href = "home.html";
+        return;
+      }
+
       if (!applyAuthenticatedUser(user)) {
         return;
       }
