@@ -29,7 +29,7 @@ export default async function handler(request, response) {
     return;
   }
 
-  const { model = "gpt-5", prompt = "", workspaceContext = "" } = request.body || {};
+  const { model = "gpt-5.4", prompt = "", workspaceContext = "" } = request.body || {};
 
   if (!String(prompt).trim()) {
     response.status(400).json({ error: "Prompt is required." });
