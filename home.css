@@ -241,6 +241,10 @@ a {
   text-align: center;
 }
 
+.early-access-gate[hidden] {
+  display: none;
+}
+
 .early-access-gate__copy {
   max-width: 760px;
 }
