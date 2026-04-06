@@ -259,6 +259,19 @@ a {
   line-height: 1.75;
 }
 
+.early-access-gate__signout {
+  margin-top: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary);
+}
+
+.early-access-gate__signout:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .waitlist-embed {
   position: relative;
   width: min(100%, 640px);

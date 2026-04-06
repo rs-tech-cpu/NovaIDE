@@ -19,9 +19,11 @@ const authCloseButtons = document.querySelectorAll("[data-close-auth]");
 const googleLoginButton = document.querySelector("[data-google-login]");
 const earlyAccessGate = document.querySelector("[data-early-access-gate]");
 const earlyAccessMessage = document.querySelector("[data-early-access-message]");
+const earlyAccessSignOut = document.querySelector("[data-early-access-signout]");
 
 const scriptLoaders = {};
 let authInstance = null;
+let accessRequestToken = 0;
 
 if (homeShell) {
   window.requestAnimationFrame(() => {
@@ -78,6 +80,20 @@ function renderAccessState(user) {
   closeAuthModal();
   const firstName = getDisplayName(user);
   earlyAccessMessage.textContent = `${firstName}, your account is signed in, but Nova early access is not enabled yet. Join the waitlist below and we’ll contact you when access opens.`;
+}
+
+async function fetchEarlyAccessStatus(email) {
+  const response = await fetch(`/api/check-access?email=${encodeURIComponent(email)}`, {
+    cache: "no-store",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || `Access check failed with ${response.status}`);
+  }
+
+  return data;
 }
 
 function loadExternalScript(src) {
@@ -168,8 +184,44 @@ function getAuthErrorMessage(error) {
 async function monitorAuthenticatedUser() {
   try {
     const auth = await ensureFirebaseAuth();
-    auth.onAuthStateChanged((user) => {
-      renderAccessState(user);
+    auth.onAuthStateChanged(async (user) => {
+      const requestToken = accessRequestToken + 1;
+      accessRequestToken = requestToken;
+
+      if (!user) {
+        renderAccessState(null);
+        return;
+      }
+
+      closeAuthModal();
+      homeShell.classList.add("is-access-blocked");
+      earlyAccessGate.hidden = false;
+      earlyAccessMessage.textContent = "Checking your Nova early access status...";
+
+      try {
+        const result = await fetchEarlyAccessStatus(user.email || "");
+
+        if (accessRequestToken !== requestToken) {
+          return;
+        }
+
+        if (result.approved) {
+          window.location.href = "index.html";
+          return;
+        }
+
+        renderAccessState(user);
+        if (result.reason) {
+          earlyAccessMessage.textContent = result.reason;
+        }
+      } catch (error) {
+        if (accessRequestToken !== requestToken) {
+          return;
+        }
+
+        renderAccessState(user);
+        earlyAccessMessage.textContent = "We could not verify your early access yet. Please join the waitlist below and try again later.";
+      }
     });
   } catch (error) {
     resetAuthMessage();
@@ -219,6 +271,18 @@ if (googleLoginButton) {
       showAuthMessage("Signed in with Google. Checking Nova access...");
     } catch (error) {
       showAuthMessage(getAuthErrorMessage(error), true);
+    }
+  });
+}
+
+if (earlyAccessSignOut) {
+  earlyAccessSignOut.addEventListener("click", async () => {
+    try {
+      const auth = await ensureFirebaseAuth();
+      await auth.signOut();
+      renderAccessState(null);
+    } catch (error) {
+      renderAccessState(null);
     }
   });
 }
