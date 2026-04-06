@@ -45,7 +45,7 @@
           </button>
           <div class="panel-menu glass-subtle" data-panel-menu hidden>
             <button class="panel-menu__item" type="button" data-menu-toggle="explorer">Toggle File Hierarchy</button>
-            <button class="panel-menu__item" type="button" data-menu-toggle="git">Toggle ChatGPT</button>
+            <button class="panel-menu__item" type="button" data-menu-toggle="git">Toggle Gemini</button>
             <button class="panel-menu__item" type="button" data-menu-toggle="terminal">Toggle Terminal</button>
             <button class="panel-menu__item panel-menu__item--danger" type="button" data-sign-out>Sign Out</button>
           </div>
@@ -159,11 +159,11 @@
         </div>
       </section>
 
-      <aside class="sidebar sidebar--right glass" aria-label="ChatGPT panel">
+      <aside class="sidebar sidebar--right glass" aria-label="Gemini panel">
         <div class="sidebar__header">
           <div>
             <p class="eyebrow">Workspace Assistant</p>
-            <h2>ChatGPT</h2>
+            <h2>Gemini</h2>
           </div>
           <span class="branch-badge" data-chat-status>Ready</span>
         </div>
@@ -176,15 +176,15 @@
           <div class="chat-list" data-chat-list></div>
           <label class="field field--compact">
             <span>Ask about this IDE workspace</span>
-            <textarea class="field__input field__input--textarea" placeholder="Ask ChatGPT to explain, refactor, debug, or plan using the current files..." data-chat-input></textarea>
+            <textarea class="field__input field__input--textarea" placeholder="Ask Gemini to explain, refactor, debug, or plan using the current files..." data-chat-input></textarea>
           </label>
           <div class="chat-toolbar">
             <label class="chat-toolbar__group" aria-label="Select model">
               <span class="chat-toolbar__label">Model</span>
               <select class="chat-toolbar__select" data-chat-model>
-                <option value="gpt-5.4">GPT-5.4</option>
-                <option value="gpt-5">GPT-5</option>
-                <option value="gpt-4.1">GPT-4.1</option>
+                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
               </select>
             </label>
             <div class="assistant-actions">

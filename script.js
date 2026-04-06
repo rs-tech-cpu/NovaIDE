@@ -2,7 +2,7 @@ const STORAGE_KEY = "novaide-workspace-v2";
 const WORKSPACE_VERSION = 4;
 const DEFAULT_BACKEND_PORT = 8765;
 const APPROVED_ACCESS_KEY = "novaide-approved-email";
-const SUPPORTED_CHAT_MODELS = ["gpt-5.4", "gpt-5", "gpt-4.1"];
+const SUPPORTED_CHAT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash"];
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAUbyQlVd8ElTbez7TAddtqc_fPXIQARPE",
   authDomain: "pixelchat-82d61.firebaseapp.com",
@@ -144,7 +144,7 @@ function normalizeChatModel(model) {
     return normalized;
   }
 
-  return "gpt-5.4";
+  return "gemini-2.5-flash-lite";
 }
 
 function ensureWorkspaceUpgradeFiles(files, storedVersion = 0) {
@@ -193,10 +193,10 @@ function createDefaultState() {
     chatMessages: [
       {
         role: "assistant",
-        content: "I can answer questions about your workspace using the deployed OpenAI assistant.",
+        content: "I can answer questions about your workspace using the deployed Gemini assistant.",
       },
     ],
-    openrouterModel: "gpt-5.4",
+    openrouterModel: "gemini-2.5-flash-lite",
     collapsedFolders: [],
     logs: [
       createLogEntry("Workspace booted with a blank HTML, CSS, and JavaScript starter.", "info"),
@@ -1832,12 +1832,12 @@ async function sendChatMessage() {
     const assistantText = data.output_text || "I could not parse a reply from the API.";
     state.chatMessages.push({ role: "assistant", content: assistantText });
     state.chatMessages = state.chatMessages.slice(-12);
-    pushLog("ChatGPT responded using the deployed OpenAI assistant.", "info");
+    pushLog("Gemini responded using the deployed AI Studio assistant.", "info");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     state.chatMessages.push({ role: "assistant", content: `Request failed: ${message}` });
     state.chatMessages = state.chatMessages.slice(-12);
-    pushLog("ChatGPT request failed.", "error");
+    pushLog("Gemini request failed.", "error");
   } finally {
     elements.chatSend.disabled = false;
     persistState();
@@ -2207,7 +2207,7 @@ function renderAll() {
     }
 
     if (item.dataset.menuToggle === "git") {
-      item.textContent = state.gitVisible ? "Hide ChatGPT" : "Show ChatGPT";
+      item.textContent = state.gitVisible ? "Hide Gemini" : "Show Gemini";
     }
 
     if (item.dataset.menuToggle === "terminal") {
