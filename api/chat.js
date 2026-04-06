@@ -1,16 +1,18 @@
-function extractResponseText(data) {
-  if (typeof data.output_text === "string" && data.output_text.trim()) {
-    return data.output_text.trim();
-  }
+const SUPPORTED_GEMINI_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash"];
 
-  if (!Array.isArray(data.output)) {
+function normalizeModel(model) {
+  const value = String(model || "").trim();
+  return SUPPORTED_GEMINI_MODELS.includes(value) ? value : "gemini-2.5-flash-lite";
+}
+
+function extractResponseText(data) {
+  if (!Array.isArray(data.candidates)) {
     return "";
   }
 
-  return data.output
-    .flatMap((item) => Array.isArray(item.content) ? item.content : [])
-    .filter((item) => item && item.type === "output_text")
-    .map((item) => item.text || "")
+  return data.candidates
+    .flatMap((candidate) => candidate?.content?.parts || [])
+    .map((part) => part?.text || "")
     .join("\n")
     .trim();
 }
@@ -22,14 +24,14 @@ export default async function handler(request, response) {
     return;
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
   if (!apiKey) {
-    response.status(500).json({ error: "OPENAI_API_KEY is not configured in Vercel." });
+    response.status(500).json({ error: "GEMINI_API_KEY or GOOGLE_API_KEY is not configured in Vercel." });
     return;
   }
 
-  const { model = "gpt-5.4", prompt = "", workspaceContext = "" } = request.body || {};
+  const { model = "gemini-2.5-flash-lite", prompt = "", workspaceContext = "" } = request.body || {};
 
   if (!String(prompt).trim()) {
     response.status(400).json({ error: "Prompt is required." });
@@ -37,35 +39,35 @@ export default async function handler(request, response) {
   }
 
   try {
-    const upstreamResponse = await fetch("https://api.openai.com/v1/responses", {
+    const upstreamResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(normalizeModel(model))}:generateContent`,
+      {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        "x-goog-api-key": apiKey,
       },
       body: JSON.stringify({
-        model,
-        input: [
-          {
-            role: "system",
-            content: [
-              {
-                type: "input_text",
-                text: "You are a helpful coding assistant inside a browser IDE. Use the provided workspace context to answer clearly, concretely, and practically.",
-              },
-            ],
-          },
+        system_instruction: {
+          parts: [
+            {
+              text: "You are a helpful coding assistant inside a browser IDE. Use the provided workspace context to answer clearly, concretely, and practically.",
+            },
+          ],
+        },
+        contents: [
           {
             role: "user",
-            content: [
+            parts: [
               {
-                type: "input_text",
                 text: `${workspaceContext}\n\nUser request:\n${prompt}`,
               },
             ],
           },
         ],
-        max_output_tokens: 700,
+        generationConfig: {
+          maxOutputTokens: 700,
+        },
       }),
     });
 
@@ -73,7 +75,7 @@ export default async function handler(request, response) {
 
     if (!upstreamResponse.ok) {
       response.status(upstreamResponse.status).json({
-        error: data.error?.message || `OpenAI request failed with ${upstreamResponse.status}.`,
+        error: data.error?.message || `Gemini request failed with ${upstreamResponse.status}.`,
       });
       return;
     }
@@ -83,7 +85,7 @@ export default async function handler(request, response) {
     });
   } catch (error) {
     response.status(502).json({
-      error: error instanceof Error ? error.message : "OpenAI request failed.",
+      error: error instanceof Error ? error.message : "Gemini request failed.",
     });
   }
 }
