@@ -156,7 +156,7 @@ export default async function handler(request, response) {
       ["approved", "early access", "access approved", "allow access", "status"]
     );
 
-    const matchingRow = dataRows.find((row) => {
+    const matchingRows = dataRows.filter((row) => {
       if (emailIndex >= 0 && String(row[emailIndex] || "").trim().toLowerCase() === email) {
         return true;
       }
@@ -164,7 +164,7 @@ export default async function handler(request, response) {
       return rowContainsEmail(row, email);
     });
 
-    if (!matchingRow) {
+    if (!matchingRows.length) {
       response.status(200).json({
         approved: false,
         reason: emailIndex < 0
@@ -174,15 +174,17 @@ export default async function handler(request, response) {
       return;
     }
 
-    const approved = approvedIndex >= 0
-      ? isApprovedValue(matchingRow[approvedIndex])
-      : rowContainsApproval(matchingRow, email);
+    const approved = matchingRows.some((row) => {
+      return approvedIndex >= 0
+        ? isApprovedValue(row[approvedIndex])
+        : rowContainsApproval(row, email);
+    });
     response.status(200).json({
       approved,
       reason: approved
         ? "Approved for Nova early access."
         : approvedIndex >= 0
-          ? "Email found, but early access is not approved yet."
+          ? `Email found in ${matchingRows.length} waitlist entr${matchingRows.length === 1 ? "y" : "ies"}, but early access is not approved yet.`
           : "Email found on the waitlist, but no approved value was detected in that row.",
     });
   } catch (error) {
