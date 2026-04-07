@@ -187,6 +187,7 @@ function createDefaultState() {
     activity: "files",
     explorerVisible: true,
     gitVisible: true,
+    previewVisible: true,
     terminalVisible: true,
     terminalHistory: [
       { type: "output", tone: "accent", text: "Browser workspace shell ready. Run `help` to see commands." },
@@ -256,6 +257,7 @@ function loadState() {
       activity: typeof parsed.activity === "string" ? parsed.activity : "files",
       explorerVisible: typeof parsed.explorerVisible === "boolean" ? parsed.explorerVisible : true,
       gitVisible: typeof parsed.gitVisible === "boolean" ? parsed.gitVisible : true,
+      previewVisible: typeof parsed.previewVisible === "boolean" ? parsed.previewVisible : true,
       terminalVisible: typeof parsed.terminalVisible === "boolean" ? parsed.terminalVisible : true,
       terminalHistory: Array.isArray(parsed.terminalHistory) && parsed.terminalHistory.length
         ? parsed.terminalHistory.slice(-80)
@@ -2217,6 +2219,7 @@ function renderAll() {
   elements.fileSearch.value = state.search;
   document.body.classList.toggle("explorer-collapsed", !state.explorerVisible);
   document.body.classList.toggle("git-collapsed", !state.gitVisible);
+  document.body.classList.toggle("preview-collapsed", !state.previewVisible);
   document.body.classList.toggle("terminal-collapsed", !state.terminalVisible);
   elements.panelMenuItems.forEach((item) => {
     if (item.dataset.menuToggle === "explorer") {
@@ -2225,6 +2228,10 @@ function renderAll() {
 
     if (item.dataset.menuToggle === "git") {
       item.textContent = state.gitVisible ? "Hide Gemini" : "Show Gemini";
+    }
+
+    if (item.dataset.menuToggle === "preview") {
+      item.textContent = state.previewVisible ? "Hide Live Preview" : "Show Live Preview";
     }
 
     if (item.dataset.menuToggle === "terminal") {
@@ -2270,7 +2277,7 @@ function handlePreviewResizeMove(event) {
 }
 
 function startPreviewResize(event) {
-  if (window.innerWidth <= 1460 || !elements.editorSurface || !elements.previewResizer) {
+  if (window.innerWidth <= 1460 || !state.previewVisible || !elements.editorSurface || !elements.previewResizer) {
     return;
   }
 
@@ -2576,6 +2583,13 @@ elements.panelMenuItems.forEach((button) => {
 
     if (button.dataset.menuToggle === "git") {
       state.gitVisible = !state.gitVisible;
+    }
+
+    if (button.dataset.menuToggle === "preview") {
+      state.previewVisible = !state.previewVisible;
+      if (!state.previewVisible) {
+        finishPreviewResize();
+      }
     }
 
     if (button.dataset.menuToggle === "terminal") {

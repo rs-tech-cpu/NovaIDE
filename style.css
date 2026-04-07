@@ -764,6 +764,10 @@ body.git-collapsed .sidebar--right {
     linear-gradient(135deg, rgba(98, 114, 164, 0.12), rgba(17, 20, 32, 0.4));
 }
 
+body.preview-collapsed .editor-surface {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .code-editor {
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
@@ -864,6 +868,11 @@ body.git-collapsed .sidebar--right {
   gap: 8px;
   padding: 10px;
   border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+body.preview-collapsed .preview-pane,
+body.preview-collapsed .preview-resizer {
+  display: none;
 }
 
 .preview-resizer {
