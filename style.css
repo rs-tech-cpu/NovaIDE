@@ -23,7 +23,7 @@
   --radius-lg: 18px;
   --radius-md: 14px;
   --radius-sm: 10px;
-  --topbar-height: 70px;
+  --topbar-height: 68px;
   --editor-font: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
 }
 
@@ -87,7 +87,8 @@ button {
 .app-shell {
   position: relative;
   min-height: 100vh;
-  padding: 18px;
+  padding: 14px;
+  font-size: 0.88rem;
 }
 
 
@@ -114,15 +115,15 @@ button {
   display: grid;
   grid-template-columns: auto minmax(240px, 1fr) auto;
   align-items: center;
-  gap: 16px;
-  padding: 12px 18px;
+  gap: 14px;
+  padding: 10px 16px;
   border-radius: var(--radius-xl);
 }
 
 .topbar__group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .topbar__group--end {
@@ -150,7 +151,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-radius: 999px;
 }
 
@@ -335,14 +336,14 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr) 250px;
-  grid-template-rows: minmax(0, 1fr) 210px;
+  grid-template-columns: 310px minmax(0, 1fr) 330px;
+  grid-template-rows: minmax(0, 1fr) 270px;
   grid-template-areas:
     "left editor right"
     "bottom bottom bottom";
   gap: 16px;
-  height: calc(100vh - var(--topbar-height) - 52px);
-  margin-top: 16px;
+  height: calc(100vh - var(--topbar-height) - 44px);
+  margin-top: 14px;
 }
 
 body.terminal-collapsed .workspace {
@@ -351,14 +352,14 @@ body.terminal-collapsed .workspace {
 }
 
 body.explorer-collapsed .workspace {
-  grid-template-columns: minmax(0, 1fr) 250px;
+  grid-template-columns: minmax(0, 1fr) 330px;
   grid-template-areas:
     "editor right"
     "bottom bottom";
 }
 
 body.git-collapsed .workspace {
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 310px minmax(0, 1fr);
   grid-template-areas:
     "left editor"
     "bottom bottom";
@@ -460,7 +461,7 @@ body.git-collapsed .sidebar--right {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
   border-radius: 12px;
-  padding: 9px 12px;
+  padding: 8px 11px;
   transition: 180ms ease;
 }
 
@@ -477,7 +478,7 @@ body.git-collapsed .sidebar--right {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 14px;
+  padding: 12px;
 }
 
 .panel-card--accent {
@@ -545,7 +546,7 @@ body.git-collapsed .sidebar--right {
 
 .summary-tile strong {
   display: block;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   margin-bottom: 4px;
 }
 
@@ -566,7 +567,7 @@ body.git-collapsed .sidebar--right {
   border-radius: 12px;
   background: transparent;
   color: inherit;
-  padding: 10px 12px;
+  padding: 8px 10px;
   text-align: left;
 }
 
@@ -670,28 +671,28 @@ body.git-collapsed .sidebar--right {
 }
 
 .editor-pane__header {
-  padding: 14px 16px 10px;
+  padding: 12px 14px 8px;
   border-bottom: 1px solid var(--border);
 }
 
 .editor-tabs {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   min-width: 0;
 }
 
 .editor-tab {
-  min-width: 76px;
+  min-width: 68px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .editor-tab__label {
-  max-width: 120px;
+  max-width: 102px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -713,7 +714,7 @@ body.git-collapsed .sidebar--right {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 12px;
+  padding: 7px 11px;
   border-radius: 999px;
   color: var(--text-secondary);
 }
@@ -738,15 +739,15 @@ body.git-collapsed .sidebar--right {
 }
 
 .pill--tiny {
-  padding: 8px 12px;
-  font-size: 0.84rem;
+  padding: 6px 10px;
+  font-size: 0.78rem;
 }
 
 .editor-toolbar {
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
-  font-size: 0.88rem;
+  font-size: 0.8rem;
 }
 
 .editor-toolbar__crumbs strong {
@@ -757,7 +758,7 @@ body.git-collapsed .sidebar--right {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-columns: minmax(0, 1fr) 210px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
     linear-gradient(135deg, rgba(98, 114, 164, 0.12), rgba(17, 20, 32, 0.4));
@@ -765,22 +766,22 @@ body.git-collapsed .sidebar--right {
 
 .code-editor {
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
+  grid-template-columns: 48px minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  padding: 16px 0;
+  padding: 12px 0;
 }
 
 .code-editor__gutter,
 .code-editor__highlight,
 .code-editor__input {
-  font: 500 0.85rem/1.6 var(--editor-font);
+  font: 500 0.78rem/1.5 var(--editor-font);
 }
 
 .code-editor__gutter {
   overflow: hidden;
-  padding-right: 14px;
+  padding-right: 10px;
   text-align: right;
   color: rgba(98, 114, 164, 0.9);
   user-select: none;
@@ -802,7 +803,7 @@ body.git-collapsed .sidebar--right {
   position: absolute;
   inset: 0;
   margin: 0;
-  padding: 0 18px 16px 0;
+  padding: 0 14px 12px 0;
   white-space: pre;
   tab-size: 2;
 }
@@ -860,15 +861,15 @@ body.git-collapsed .sidebar--right {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 10px;
   border-left: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .preview-frame {
   width: 100%;
   flex: 1;
-  min-height: 220px;
+  min-height: 190px;
   border: 0;
   border-radius: var(--radius-lg);
   background: white;
@@ -1110,16 +1111,16 @@ body.terminal-collapsed .bottom-panel {
 }
 
 .field__input {
-  height: 50px;
+  height: 44px;
   border-radius: 14px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.04);
-  padding: 0 14px;
+  padding: 0 12px;
 }
 
 .field__input--textarea {
-  min-height: 110px;
-  padding: 14px;
+  min-height: 96px;
+  padding: 12px;
   resize: vertical;
 }
 
@@ -1132,17 +1133,17 @@ body.terminal-collapsed .bottom-panel {
 
 .chat-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   flex: 1;
-  min-height: 180px;
+  min-height: 150px;
   max-height: 320px;
   overflow: auto;
-  margin: 14px 0;
+  margin: 10px 0;
 }
 
 .chat-message {
-  padding: 14px;
-  border-radius: 16px;
+  padding: 12px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -1153,7 +1154,7 @@ body.terminal-collapsed .bottom-panel {
 
 .chat-message__role {
   margin: 0 0 6px;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--text-muted);
@@ -1162,7 +1163,7 @@ body.terminal-collapsed .bottom-panel {
 .chat-message__body {
   margin: 0;
   white-space: pre-wrap;
-  line-height: 1.55;
+  line-height: 1.45;
   color: var(--text-secondary);
 }
 
@@ -1178,10 +1179,10 @@ body.terminal-collapsed .bottom-panel {
   display: grid;
   grid-template-columns: 1fr;
   align-items: stretch;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 18px;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(255, 255, 255, 0.03);
 }
@@ -1190,13 +1191,13 @@ body.terminal-collapsed .bottom-panel {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
 .chat-toolbar__label {
   color: var(--text-muted);
-  font-size: 0.84rem;
+  font-size: 0.74rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1204,12 +1205,12 @@ body.terminal-collapsed .bottom-panel {
 .chat-toolbar__select {
   width: 100%;
   min-width: 0;
-  height: 40px;
+  height: 34px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
-  padding: 0 14px;
+  padding: 0 10px;
   font: inherit;
   outline: none;
   appearance: none;
