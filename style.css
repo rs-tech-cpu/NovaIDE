@@ -19,11 +19,11 @@
   --accent-yellow: #f1fa8c;
   --shadow-lg: 0 30px 60px rgba(0, 0, 0, 0.42);
   --shadow-md: 0 18px 38px rgba(0, 0, 0, 0.28);
-  --radius-xl: 28px;
-  --radius-lg: 22px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
-  --topbar-height: 86px;
+  --radius-xl: 22px;
+  --radius-lg: 18px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --topbar-height: 70px;
   --editor-font: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
 }
 
@@ -86,11 +86,8 @@ button {
 
 .app-shell {
   position: relative;
-  width: 125%;
-  min-height: 125vh;
-  padding: 24px;
-  transform: scale(0.8);
-  transform-origin: top left;
+  min-height: 100vh;
+  padding: 18px;
 }
 
 
@@ -117,15 +114,15 @@ button {
   display: grid;
   grid-template-columns: auto minmax(240px, 1fr) auto;
   align-items: center;
-  gap: 20px;
-  padding: 18px 24px;
+  gap: 16px;
+  padding: 12px 18px;
   border-radius: var(--radius-xl);
 }
 
 .topbar__group {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .topbar__group--end {
@@ -153,7 +150,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border-radius: 999px;
 }
 
@@ -338,14 +335,14 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr) 330px;
-  grid-template-rows: minmax(0, 1fr) 270px;
+  grid-template-columns: 260px minmax(0, 1fr) 250px;
+  grid-template-rows: minmax(0, 1fr) 210px;
   grid-template-areas:
     "left editor right"
     "bottom bottom bottom";
-  gap: 20px;
-  height: calc(100vh - var(--topbar-height) - 68px);
-  margin-top: 20px;
+  gap: 16px;
+  height: calc(100vh - var(--topbar-height) - 52px);
+  margin-top: 16px;
 }
 
 body.terminal-collapsed .workspace {
@@ -354,14 +351,14 @@ body.terminal-collapsed .workspace {
 }
 
 body.explorer-collapsed .workspace {
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) 250px;
   grid-template-areas:
     "editor right"
     "bottom bottom";
 }
 
 body.git-collapsed .workspace {
-  grid-template-columns: 310px minmax(0, 1fr);
+  grid-template-columns: 260px minmax(0, 1fr);
   grid-template-areas:
     "left editor"
     "bottom bottom";
@@ -386,10 +383,10 @@ body.explorer-collapsed.git-collapsed.terminal-collapsed .workspace {
 }
 
 .sidebar {
-  padding: 20px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
   overflow: auto;
 }
 
@@ -417,7 +414,7 @@ body.git-collapsed .sidebar--right {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
 }
 
 .sidebar__header h2,
@@ -433,15 +430,15 @@ body.git-collapsed .sidebar--right {
 .bottom-tabs {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .icon-button {
-  min-width: 38px;
-  height: 38px;
+  min-width: 34px;
+  height: 34px;
   border: 0;
-  border-radius: 14px;
-  padding: 0 14px;
+  border-radius: 12px;
+  padding: 0 12px;
   background: linear-gradient(135deg, rgba(139, 233, 253, 0.22), rgba(189, 147, 249, 0.2));
   color: var(--text-primary);
 }
@@ -453,7 +450,7 @@ body.git-collapsed .sidebar--right {
 .activity-rail {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 
 .activity-rail__item,
@@ -462,8 +459,8 @@ body.git-collapsed .sidebar--right {
   border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-secondary);
-  border-radius: 14px;
-  padding: 11px 14px;
+  border-radius: 12px;
+  padding: 9px 12px;
   transition: 180ms ease;
 }
 
@@ -480,7 +477,7 @@ body.git-collapsed .sidebar--right {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 18px;
+  padding: 14px;
 }
 
 .panel-card--accent {
@@ -536,11 +533,11 @@ body.git-collapsed .sidebar--right {
 .workspace-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 10px;
 }
 
 .summary-tile {
-  padding: 14px;
+  padding: 12px;
   border-radius: var(--radius-md);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.04);
@@ -673,20 +670,20 @@ body.git-collapsed .sidebar--right {
 }
 
 .editor-pane__header {
-  padding: 18px 20px 12px;
+  padding: 14px 16px 10px;
   border-bottom: 1px solid var(--border);
 }
 
 .editor-tabs {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
 }
 
 .editor-tab {
-  min-width: 90px;
+  min-width: 76px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -694,7 +691,7 @@ body.git-collapsed .sidebar--right {
 }
 
 .editor-tab__label {
-  max-width: 140px;
+  max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -716,7 +713,7 @@ body.git-collapsed .sidebar--right {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 14px;
+  padding: 8px 12px;
   border-radius: 999px;
   color: var(--text-secondary);
 }
@@ -746,10 +743,10 @@ body.git-collapsed .sidebar--right {
 }
 
 .editor-toolbar {
-  padding: 14px 20px;
+  padding: 10px 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
 }
 
 .editor-toolbar__crumbs strong {
@@ -760,7 +757,7 @@ body.git-collapsed .sidebar--right {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 230px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
     linear-gradient(135deg, rgba(98, 114, 164, 0.12), rgba(17, 20, 32, 0.4));
@@ -768,22 +765,22 @@ body.git-collapsed .sidebar--right {
 
 .code-editor {
   display: grid;
-  grid-template-columns: 70px minmax(0, 1fr);
+  grid-template-columns: 56px minmax(0, 1fr);
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  padding: 22px 0;
+  padding: 16px 0;
 }
 
 .code-editor__gutter,
 .code-editor__highlight,
 .code-editor__input {
-  font: 500 0.95rem/1.7 var(--editor-font);
+  font: 500 0.85rem/1.6 var(--editor-font);
 }
 
 .code-editor__gutter {
   overflow: hidden;
-  padding-right: 18px;
+  padding-right: 14px;
   text-align: right;
   color: rgba(98, 114, 164, 0.9);
   user-select: none;
@@ -805,7 +802,7 @@ body.git-collapsed .sidebar--right {
   position: absolute;
   inset: 0;
   margin: 0;
-  padding: 0 28px 22px 0;
+  padding: 0 18px 16px 0;
   white-space: pre;
   tab-size: 2;
 }
@@ -863,15 +860,15 @@ body.git-collapsed .sidebar--right {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 18px;
+  gap: 10px;
+  padding: 12px;
   border-left: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .preview-frame {
   width: 100%;
   flex: 1;
-  min-height: 320px;
+  min-height: 220px;
   border: 0;
   border-radius: var(--radius-lg);
   background: white;
