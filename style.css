@@ -758,7 +758,7 @@ body.git-collapsed .sidebar--right {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 210px;
+  grid-template-columns: minmax(0, 1fr) 10px var(--preview-width, 210px);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent),
     linear-gradient(135deg, rgba(98, 114, 164, 0.12), rgba(17, 20, 32, 0.4));
@@ -864,6 +864,37 @@ body.git-collapsed .sidebar--right {
   gap: 8px;
   padding: 10px;
   border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.preview-resizer {
+  position: relative;
+  width: 10px;
+  cursor: col-resize;
+  background: transparent;
+}
+
+.preview-resizer::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.preview-resizer:hover::before,
+.preview-resizer:focus-visible::before,
+body.is-resizing-preview .preview-resizer::before {
+  background: rgba(139, 233, 253, 0.8);
+  box-shadow: 0 0 12px rgba(139, 233, 253, 0.35);
+}
+
+.preview-resizer:focus-visible {
+  outline: none;
 }
 
 .preview-frame {
@@ -1295,6 +1326,10 @@ body.terminal-collapsed .bottom-panel {
 
   .editor-surface {
     grid-template-columns: 1fr;
+  }
+
+  .preview-resizer {
+    display: none;
   }
 
   .preview-pane {

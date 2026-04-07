@@ -137,7 +137,7 @@
           </div>
         </div>
 
-        <div class="editor-surface">
+        <div class="editor-surface" data-editor-surface>
           <div class="code-editor" role="tabpanel" aria-label="Code editor">
             <div class="code-editor__gutter" aria-hidden="true" data-line-numbers></div>
             <div class="editor-stage">
@@ -145,6 +145,15 @@
               <textarea class="code-editor__input" spellcheck="false" data-editor-input></textarea>
             </div>
           </div>
+
+          <div
+            class="preview-resizer"
+            role="separator"
+            aria-label="Resize live preview"
+            aria-orientation="vertical"
+            tabindex="0"
+            data-preview-resizer
+          ></div>
 
           <aside class="preview-pane glass-subtle" aria-label="Live preview">
             <div class="preview-pane__header">

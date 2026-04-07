@@ -30,7 +30,9 @@ const elements = {
   lineNumbers: document.querySelector("[data-line-numbers]"),
   highlightCode: document.querySelector("[data-highlight-code]"),
   editorInput: document.querySelector("[data-editor-input]"),
+  editorSurface: document.querySelector("[data-editor-surface]"),
   previewFrame: document.querySelector("[data-preview-frame]"),
+  previewResizer: document.querySelector("[data-preview-resizer]"),
   previewTitle: document.querySelector("[data-preview-title]"),
   previewStatus: document.querySelector("[data-preview-status]"),
   chatStatus: document.querySelector("[data-chat-status]"),
@@ -197,6 +199,7 @@ function createDefaultState() {
       },
     ],
     openrouterModel: "gemini-2.5-flash-lite",
+    previewWidth: 210,
     collapsedFolders: [],
     logs: [
       createLogEntry("Workspace booted with a blank HTML, CSS, and JavaScript starter.", "info"),
@@ -262,6 +265,7 @@ function loadState() {
         ? parsed.chatMessages.slice(-12)
         : createDefaultState().chatMessages,
       openrouterModel: normalizeChatModel(parsed.openrouterModel),
+      previewWidth: typeof parsed.previewWidth === "number" ? parsed.previewWidth : createDefaultState().previewWidth,
       collapsedFolders: Array.isArray(parsed.collapsedFolders) ? parsed.collapsedFolders : [],
       logs: Array.isArray(parsed.logs) && parsed.logs.length
         ? parsed.logs.slice(0, 18)
@@ -274,6 +278,7 @@ function loadState() {
 
 let state = loadState();
 let previewTimer = null;
+let previewResizeSession = null;
 let terminalPendingAction = null;
 let shellBackend = {
   available: false,
@@ -414,6 +419,18 @@ function persistState() {
   };
 
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
+}
+
+function clampPreviewWidth(width) {
+  return Math.max(170, Math.min(520, Math.round(width)));
+}
+
+function applyPreviewWidth() {
+  if (!elements.editorSurface) {
+    return;
+  }
+
+  elements.editorSurface.style.setProperty("--preview-width", `${clampPreviewWidth(state.previewWidth || 210)}px`);
 }
 
 function normalizePath(path) {
@@ -2225,8 +2242,43 @@ function renderAll() {
   renderEditor();
   renderChatPanel();
   renderDebugPanel();
+  applyPreviewWidth();
   renderPreview();
   renderTerminal();
+}
+
+function finishPreviewResize() {
+  if (!previewResizeSession) {
+    return;
+  }
+
+  window.removeEventListener("pointermove", handlePreviewResizeMove);
+  window.removeEventListener("pointerup", finishPreviewResize);
+  document.body.classList.remove("is-resizing-preview");
+  previewResizeSession = null;
+  persistState();
+}
+
+function handlePreviewResizeMove(event) {
+  if (!previewResizeSession || !elements.editorSurface) {
+    return;
+  }
+
+  const bounds = elements.editorSurface.getBoundingClientRect();
+  state.previewWidth = clampPreviewWidth(bounds.right - event.clientX);
+  applyPreviewWidth();
+}
+
+function startPreviewResize(event) {
+  if (window.innerWidth <= 1460 || !elements.editorSurface || !elements.previewResizer) {
+    return;
+  }
+
+  previewResizeSession = { pointerId: event.pointerId };
+  elements.previewResizer.setPointerCapture?.(event.pointerId);
+  document.body.classList.add("is-resizing-preview");
+  window.addEventListener("pointermove", handlePreviewResizeMove);
+  window.addEventListener("pointerup", finishPreviewResize, { once: true });
 }
 
 async function importFiles(fileList) {
@@ -2477,6 +2529,18 @@ elements.chatClear.addEventListener("click", () => {
   ];
   persistState();
   renderChatPanel();
+});
+elements.previewResizer?.addEventListener("pointerdown", startPreviewResize);
+elements.previewResizer?.addEventListener("keydown", (event) => {
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+    return;
+  }
+
+  event.preventDefault();
+  const delta = event.key === "ArrowLeft" ? 20 : -20;
+  state.previewWidth = clampPreviewWidth((state.previewWidth || 210) + delta);
+  applyPreviewWidth();
+  persistState();
 });
 elements.terminalForm.addEventListener("submit", (event) => {
   event.preventDefault();
