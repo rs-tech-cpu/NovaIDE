@@ -709,13 +709,13 @@ function tokenizePatterns(value, patterns) {
   const stash = [];
   let output = value;
 
- // patterns.forEach(({ regex, className }) => {
-  //  output = output.replace(regex, (match) => {
-  //    const token = `__TOKEN_${stash.length}__`;
-  //    stash.push(`<span class="${className}">${match}</span>`);
-  //    return token;
-  //  });
-  //});
+  patterns.forEach(({ regex, className }) => {
+    output = output.replace(regex, (match) => {
+      const token = `__TOKEN_${stash.length}__`;
+      stash.push(`<span class="${className}">${match}</span>`);
+      return token;
+    });
+  });
 
   return output.replace(/__TOKEN_(\d+)__/g, (_, index) => stash[Number(index)]);
 }
