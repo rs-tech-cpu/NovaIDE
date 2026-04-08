@@ -58,7 +58,6 @@ const elements = {
   createForm: document.querySelector("[data-create-form]"),
   newFilePath: document.querySelector("[data-new-file-path]"),
   newFileTemplate: document.querySelector("[data-new-file-template]"),
-  saveWorkspace: document.querySelector("[data-save-workspace]"),
   downloadFile: document.querySelector("[data-download-file]"),
   runActiveFile: document.querySelector("[data-run-active-file]"),
   createFolder: document.querySelector("[data-create-folder]"),
@@ -1432,6 +1431,12 @@ async function runRemoteFileWithOneCompiler(filePath, expectedLanguage = "", std
 }
 
 async function runActiveEditorFile() {
+  if (!state.terminalVisible) {
+    state.terminalVisible = true;
+    persistState();
+    renderAll();
+  }
+
   const activeFile = getActiveFile();
 
   if (!activeFile) {
@@ -1729,6 +1734,59 @@ function injectIntoMarkup(source, marker, injection) {
   return `${source.slice(0, index)}${injection}${source.slice(index)}`;
 }
 
+function resolvePreviewAssetPath(assetPath, htmlPath) {
+  const normalizedAssetPath = normalizePath(assetPath || "");
+
+  if (!normalizedAssetPath || /^(https?:)?\/\//i.test(assetPath) || normalizedAssetPath.startsWith("data:")) {
+    return "";
+  }
+
+  if (assetPath.startsWith("/")) {
+    return normalizedAssetPath;
+  }
+
+  const htmlFolder = htmlPath && getFolderPath(htmlPath) !== "workspace"
+    ? getFolderPath(htmlPath)
+    : "";
+
+  const combined = [htmlFolder, normalizedAssetPath].filter(Boolean).join("/");
+  const segments = combined.split("/");
+  const resolved = [];
+
+  segments.forEach((segment) => {
+    if (!segment || segment === ".") {
+      return;
+    }
+
+    if (segment === "..") {
+      resolved.pop();
+      return;
+    }
+
+    resolved.push(segment);
+  });
+
+  return resolved.join("/");
+}
+
+function getPreviewJavaScriptFiles(previewSource, htmlPath, activeFile) {
+  const referencedScripts = [...previewSource.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)]
+    .map((match) => resolvePreviewAssetPath(match[1], htmlPath))
+    .filter(Boolean);
+
+  if (referencedScripts.length) {
+    return referencedScripts
+      .map((path) => state.files.find((file) => file.path === path && file.language === "javascript"))
+      .filter(Boolean);
+  }
+
+  if (activeFile?.language === "javascript" && activeFile.path !== "scripts/reset-project.js") {
+    return [activeFile];
+  }
+
+  return [];
+}
+
 function buildPreviewDocument() {
   const activeFile = getActiveFile();
   const htmlFile = activeFile.language === "html"
@@ -1741,14 +1799,13 @@ function buildPreviewDocument() {
     .map((file) => `/* ${file.path} */\n${file.content}`)
     .join("\n\n");
 
-  const jsBundle = state.files
-    .filter((file) => file.language === "javascript")
-    .map((file) => `// ${file.path}\n${file.content}`)
-    .join("\n\n");
-
   const previewSource = htmlFile
     ? htmlFile.content
     : `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Preview</title></head><body><main style="font-family: sans-serif; padding: 32px;">Create an HTML file to render a live preview.</main></body></html>`;
+
+  const jsBundle = getPreviewJavaScriptFiles(previewSource, htmlFile?.path || "", activeFile)
+    .map((file) => `// ${file.path}\n${file.content}`)
+    .join("\n\n");
 
   const bridgeScript = `<script>
     const originalLog = console.log.bind(console);
@@ -2559,7 +2616,6 @@ elements.terminalForm.addEventListener("submit", (event) => {
 elements.runActiveFile.addEventListener("click", () => {
   runActiveEditorFile();
 });
-elements.saveWorkspace.addEventListener("click", saveSnapshot);
 elements.downloadFile.addEventListener("click", downloadActiveFile);
 elements.signOut.addEventListener("click", async () => {
   clearApprovedAccess();
