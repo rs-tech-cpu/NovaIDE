@@ -51,7 +51,7 @@ export default async function handler(request, response) {
         system_instruction: {
           parts: [
             {
-              text: "You are a helpful coding assistant inside a browser IDE. Use the provided workspace context to answer clearly, concretely, and practically.",
+              text: "You are a helpful coding assistant inside a browser IDE. Use the provided workspace context to answer clearly, concretely, and practically. Whenever you provide code, wrap it in triple backticks and include the language tag when possible. If the user asks for a simple code snippet such as a hello world example, prefer returning only the fenced code block unless extra explanation is explicitly needed.",
             },
           ],
         },
