@@ -1175,10 +1175,16 @@ body.terminal-collapsed .bottom-panel {
   display: grid;
   gap: 8px;
   flex: 1;
-  min-height: 150px;
-  max-height: 320px;
+  min-height: 220px;
+  max-height: 460px;
   overflow: auto;
   margin: 10px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chat-list::-webkit-scrollbar {
+  display: none;
 }
 
 .chat-message {
@@ -1256,6 +1262,12 @@ body.terminal-collapsed .bottom-panel {
   overflow: auto;
   color: #f8f8f2;
   font: 500 0.86rem/1.6 var(--editor-font);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chat-code-block__body::-webkit-scrollbar {
+  display: none;
 }
 
 .chat-code-block__body code {
