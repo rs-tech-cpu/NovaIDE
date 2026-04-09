@@ -366,6 +366,23 @@ body.git-collapsed .workspace {
     "bottom bottom";
 }
 
+body.git-collapsed.explorer-collapsed .workspace {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "editor"
+    "bottom";
+}
+
+body.git-collapsed.terminal-collapsed .workspace {
+  grid-template-columns: 310px minmax(0, 1fr);
+  grid-template-areas: "left editor";
+}
+
+body.git-collapsed.explorer-collapsed.terminal-collapsed .workspace {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "editor";
+}
+
 body.explorer-collapsed.git-collapsed .workspace {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
@@ -1410,6 +1427,13 @@ body.terminal-collapsed .bottom-panel {
       "bottom bottom";
   }
 
+  body.git-collapsed.explorer-collapsed .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "editor"
+      "bottom";
+  }
+
   body.explorer-collapsed.git-collapsed .workspace {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
@@ -1426,6 +1450,10 @@ body.terminal-collapsed .bottom-panel {
   body.git-collapsed.terminal-collapsed .workspace {
     grid-template-areas:
       "left editor";
+  }
+
+  body.git-collapsed.explorer-collapsed.terminal-collapsed .workspace {
+    grid-template-areas: "editor";
   }
 
   body.explorer-collapsed.git-collapsed.terminal-collapsed .workspace {
