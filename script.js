@@ -1007,7 +1007,10 @@ function renderChatMessageBody(content) {
     const code = segments[index + 1] || "";
     rendered.push(`
       <section class="chat-code-block">
-        <div class="chat-code-block__header">${escapeHtml(language || "code")}</div>
+        <div class="chat-code-block__header">
+          <span>${escapeHtml(language || "code")}</span>
+          <button class="chat-code-block__copy" type="button" data-copy-code>Copy</button>
+        </div>
         <pre class="chat-code-block__body"><code>${escapeHtml(code.trim())}</code></pre>
       </section>
     `);
@@ -2568,6 +2571,35 @@ elements.chatClear.addEventListener("click", () => {
   ];
   persistState();
   renderChatPanel();
+});
+elements.chatList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-copy-code]");
+
+  if (!button) {
+    return;
+  }
+
+  const codeBlock = button.closest(".chat-code-block")?.querySelector("code");
+  const code = codeBlock?.textContent || "";
+
+  if (!code) {
+    return;
+  }
+
+  const originalLabel = button.textContent;
+
+  try {
+    await navigator.clipboard.writeText(code);
+    button.textContent = "Copied";
+    window.setTimeout(() => {
+      button.textContent = originalLabel;
+    }, 1200);
+  } catch (error) {
+    button.textContent = "Failed";
+    window.setTimeout(() => {
+      button.textContent = originalLabel;
+    }, 1200);
+  }
 });
 elements.previewResizer?.addEventListener("pointerdown", startPreviewResize);
 elements.previewResizer?.addEventListener("keydown", (event) => {
