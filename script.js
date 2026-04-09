@@ -33,6 +33,7 @@ const elements = {
   editorSurface: document.querySelector("[data-editor-surface]"),
   previewFrame: document.querySelector("[data-preview-frame]"),
   previewResizer: document.querySelector("[data-preview-resizer]"),
+  sidebarResizer: document.querySelector("[data-sidebar-resizer]"),
   previewTitle: document.querySelector("[data-preview-title]"),
   previewStatus: document.querySelector("[data-preview-status]"),
   chatStatus: document.querySelector("[data-chat-status]"),
@@ -201,6 +202,7 @@ function createDefaultState() {
     ],
     openrouterModel: "gemini-2.5-flash-lite",
     previewWidth: 210,
+    sidebarWidth: 330,
     collapsedFolders: [],
     logs: [
       createLogEntry("Workspace booted with a blank HTML, CSS, and JavaScript starter.", "info"),
@@ -268,6 +270,7 @@ function loadState() {
         : createDefaultState().chatMessages,
       openrouterModel: normalizeChatModel(parsed.openrouterModel),
       previewWidth: typeof parsed.previewWidth === "number" ? parsed.previewWidth : createDefaultState().previewWidth,
+      sidebarWidth: typeof parsed.sidebarWidth === "number" ? parsed.sidebarWidth : createDefaultState().sidebarWidth,
       collapsedFolders: Array.isArray(parsed.collapsedFolders) ? parsed.collapsedFolders : [],
       logs: Array.isArray(parsed.logs) && parsed.logs.length
         ? parsed.logs.slice(0, 18)
@@ -281,6 +284,7 @@ function loadState() {
 let state = loadState();
 let previewTimer = null;
 let previewResizeSession = null;
+let sidebarResizeSession = null;
 let terminalPendingAction = null;
 let shellBackend = {
   available: false,
@@ -433,6 +437,14 @@ function applyPreviewWidth() {
   }
 
   elements.editorSurface.style.setProperty("--preview-width", `${clampPreviewWidth(state.previewWidth || 210)}px`);
+}
+
+function clampSidebarWidth(width) {
+  return Math.max(280, Math.min(520, Math.round(width)));
+}
+
+function applySidebarWidth() {
+  document.documentElement.style.setProperty("--right-sidebar-width", `${clampSidebarWidth(state.sidebarWidth || 330)}px`);
 }
 
 function normalizePath(path) {
@@ -2285,6 +2297,7 @@ function renderAll() {
   renderChatPanel();
   renderDebugPanel();
   applyPreviewWidth();
+  applySidebarWidth();
   renderPreview();
   renderTerminal();
 }
@@ -2321,6 +2334,39 @@ function startPreviewResize(event) {
   document.body.classList.add("is-resizing-preview");
   window.addEventListener("pointermove", handlePreviewResizeMove);
   window.addEventListener("pointerup", finishPreviewResize, { once: true });
+}
+
+function finishSidebarResize() {
+  if (!sidebarResizeSession) {
+    return;
+  }
+
+  window.removeEventListener("pointermove", handleSidebarResizeMove);
+  window.removeEventListener("pointerup", finishSidebarResize);
+  document.body.classList.remove("is-resizing-sidebar");
+  sidebarResizeSession = null;
+  persistState();
+}
+
+function handleSidebarResizeMove(event) {
+  if (!sidebarResizeSession) {
+    return;
+  }
+
+  state.sidebarWidth = clampSidebarWidth(window.innerWidth - event.clientX - 14);
+  applySidebarWidth();
+}
+
+function startSidebarResize(event) {
+  if (window.innerWidth <= 1460 || !state.gitVisible || !elements.sidebarResizer) {
+    return;
+  }
+
+  sidebarResizeSession = { pointerId: event.pointerId };
+  elements.sidebarResizer.setPointerCapture?.(event.pointerId);
+  document.body.classList.add("is-resizing-sidebar");
+  window.addEventListener("pointermove", handleSidebarResizeMove);
+  window.addEventListener("pointerup", finishSidebarResize, { once: true });
 }
 
 async function importFiles(fileList) {
@@ -2611,6 +2657,18 @@ elements.previewResizer?.addEventListener("keydown", (event) => {
   const delta = event.key === "ArrowLeft" ? 20 : -20;
   state.previewWidth = clampPreviewWidth((state.previewWidth || 210) + delta);
   applyPreviewWidth();
+  persistState();
+});
+elements.sidebarResizer?.addEventListener("pointerdown", startSidebarResize);
+elements.sidebarResizer?.addEventListener("keydown", (event) => {
+  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+    return;
+  }
+
+  event.preventDefault();
+  const delta = event.key === "ArrowLeft" ? 20 : -20;
+  state.sidebarWidth = clampSidebarWidth((state.sidebarWidth || 330) + delta);
+  applySidebarWidth();
   persistState();
 });
 elements.terminalForm.addEventListener("submit", (event) => {

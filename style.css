@@ -24,6 +24,7 @@
   --radius-md: 14px;
   --radius-sm: 10px;
   --topbar-height: 68px;
+  --right-sidebar-width: 330px;
   --editor-font: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
 }
 
@@ -336,10 +337,10 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr) 330px;
+  grid-template-columns: 310px minmax(0, 1fr) 10px var(--right-sidebar-width);
   grid-template-rows: minmax(0, 1fr) 270px;
   grid-template-areas:
-    "left editor right"
+    "left editor gutter right"
     "bottom bottom bottom";
   gap: 16px;
   height: calc(100vh - var(--topbar-height) - 44px);
@@ -348,13 +349,13 @@ button {
 
 body.terminal-collapsed .workspace {
   grid-template-rows: minmax(0, 1fr);
-  grid-template-areas: "left editor right";
+  grid-template-areas: "left editor gutter right";
 }
 
 body.explorer-collapsed .workspace {
-  grid-template-columns: minmax(0, 1fr) 330px;
+  grid-template-columns: minmax(0, 1fr) 10px var(--right-sidebar-width);
   grid-template-areas:
-    "editor right"
+    "editor gutter right"
     "bottom bottom";
 }
 
@@ -399,8 +400,39 @@ body.explorer-collapsed.git-collapsed.terminal-collapsed .workspace {
   grid-area: right;
 }
 
+.sidebar-resizer {
+  grid-area: gutter;
+  position: relative;
+  cursor: col-resize;
+}
+
+.sidebar-resizer::before {
+  content: "";
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.sidebar-resizer:hover::before,
+.sidebar-resizer:focus-visible::before,
+body.is-resizing-sidebar .sidebar-resizer::before {
+  background: rgba(139, 233, 253, 0.8);
+  box-shadow: 0 0 12px rgba(139, 233, 253, 0.35);
+}
+
+.sidebar-resizer:focus-visible {
+  outline: none;
+}
+
 body.explorer-collapsed .sidebar--left,
-body.git-collapsed .sidebar--right {
+body.git-collapsed .sidebar--right,
+body.git-collapsed .sidebar-resizer {
   display: none;
 }
 
@@ -1411,6 +1443,10 @@ body.terminal-collapsed .bottom-panel {
   .preview-pane {
     border-left: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  .sidebar-resizer {
+    display: none;
   }
 
   .sidebar--right,
