@@ -1202,9 +1202,44 @@ body.terminal-collapsed .bottom-panel {
 
 .chat-message__body {
   margin: 0;
-  white-space: pre-wrap;
   line-height: 1.45;
   color: var(--text-secondary);
+}
+
+.chat-message__body p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.chat-message__body > * + * {
+  margin-top: 10px;
+}
+
+.chat-code-block {
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(13, 15, 26, 0.76);
+}
+
+.chat-code-block__header {
+  padding: 12px 14px 6px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: lowercase;
+}
+
+.chat-code-block__body {
+  margin: 0;
+  padding: 8px 14px 14px;
+  overflow: auto;
+  color: #f8f8f2;
+  font: 500 0.86rem/1.6 var(--editor-font);
+}
+
+.chat-code-block__body code {
+  color: inherit;
 }
 
 .assistant-actions {

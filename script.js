@@ -980,9 +980,41 @@ function renderChatPanel() {
   elements.chatList.innerHTML = messages.map((message) => `
     <article class="chat-message ${message.role === "assistant" ? "chat-message--assistant" : ""}">
       <p class="chat-message__role">${message.role}</p>
-      <p class="chat-message__body">${escapeHtml(message.content)}</p>
+      <div class="chat-message__body">${renderChatMessageBody(message.content)}</div>
     </article>
   `).join("");
+}
+
+function renderChatMessageBody(content) {
+  const segments = String(content || "").split(/```([\w#+.-]*)\n?([\s\S]*?)```/g);
+
+  if (segments.length === 1) {
+    return `<p>${escapeHtml(content)}</p>`;
+  }
+
+  const rendered = [];
+
+  for (let index = 0; index < segments.length; index += 1) {
+    if (index % 3 === 0) {
+      const text = segments[index];
+      if (text.trim()) {
+        rendered.push(`<p>${escapeHtml(text)}</p>`);
+      }
+      continue;
+    }
+
+    const language = segments[index];
+    const code = segments[index + 1] || "";
+    rendered.push(`
+      <section class="chat-code-block">
+        <div class="chat-code-block__header">${escapeHtml(language || "code")}</div>
+        <pre class="chat-code-block__body"><code>${escapeHtml(code.trim())}</code></pre>
+      </section>
+    `);
+    index += 1;
+  }
+
+  return rendered.join("");
 }
 
 function getVisibleEntriesForCwd() {
