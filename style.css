@@ -341,7 +341,7 @@ button {
   grid-template-rows: minmax(0, 1fr) 270px;
   grid-template-areas:
     "left editor gutter right"
-    "bottom bottom bottom";
+    "bottom bottom bottom bottom";
   gap: 16px;
   height: calc(100vh - var(--topbar-height) - 44px);
   margin-top: 14px;
@@ -356,7 +356,7 @@ body.explorer-collapsed .workspace {
   grid-template-columns: minmax(0, 1fr) 10px var(--right-sidebar-width);
   grid-template-areas:
     "editor gutter right"
-    "bottom bottom";
+    "bottom bottom bottom";
 }
 
 body.git-collapsed .workspace {
@@ -371,6 +371,12 @@ body.git-collapsed.explorer-collapsed .workspace {
   grid-template-areas:
     "editor"
     "bottom";
+}
+
+body.explorer-collapsed.terminal-collapsed .workspace {
+  grid-template-columns: minmax(0, 1fr) 10px var(--right-sidebar-width);
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-areas: "editor gutter right";
 }
 
 body.git-collapsed.terminal-collapsed .workspace {
@@ -1442,6 +1448,7 @@ body.terminal-collapsed .bottom-panel {
   }
 
   body.explorer-collapsed.terminal-collapsed .workspace {
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "editor"
       "right";
