@@ -19,7 +19,6 @@ const elements = {
   treeCaption: document.querySelector("[data-tree-caption]"),
   totalFiles: document.querySelector("[data-total-files]"),
   dirtyFiles: document.querySelector("[data-dirty-files]"),
-  importedFiles: document.querySelector("[data-imported-files]"),
   tabs: document.querySelector("[data-editor-tabs]"),
   selectionLabel: document.querySelector("[data-selection-label]"),
   currentFolder: document.querySelector("[data-current-folder]"),
@@ -894,11 +893,9 @@ function renderTree() {
 
 function renderSummary() {
   const changedCount = getChangedFiles().length;
-  const importedCount = state.files.filter((file) => file.source !== "starter" || !file.tracked).length;
 
   elements.totalFiles.textContent = String(state.files.length);
   elements.dirtyFiles.textContent = String(changedCount);
-  elements.importedFiles.textContent = String(importedCount);
   if (shellBackend.available) {
     elements.sessionStatus.textContent = changedCount ? "Python shell connected • Unsaved edits" : "Python shell connected";
   } else {
