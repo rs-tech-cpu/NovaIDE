@@ -355,7 +355,7 @@ button {
   grid-template-areas:
     "left editor gutter right"
     "bottom bottom bottom bottom";
-  gap: 16px;
+  gap: 10px;
   height: calc(100vh - var(--topbar-height) - 44px);
   margin-top: 14px;
 }
@@ -440,6 +440,7 @@ body.explorer-collapsed.git-collapsed.terminal-collapsed .workspace {
   grid-area: gutter;
   position: relative;
   cursor: col-resize;
+  width: 6px;
 }
 
 .sidebar-resizer::before {
