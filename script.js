@@ -285,6 +285,9 @@ let previewTimer = null;
 let previewResizeSession = null;
 let sidebarResizeSession = null;
 let terminalPendingAction = null;
+let cloudSaveTimer = null;
+let firestoreInstance = null;
+let cloudSyncReady = false;
 let shellBackend = {
   available: false,
   baseUrl: "",
@@ -361,6 +364,7 @@ async function ensureFirebaseAuth() {
 
   await loadExternalScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js");
   await loadExternalScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js");
+  await loadExternalScript("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js");
 
   if (!window.firebase) {
     throw new Error("Firebase failed to initialize.");
@@ -371,6 +375,7 @@ async function ensureFirebaseAuth() {
   }
 
   authInstance = firebase.auth();
+  firestoreInstance = firebase.firestore();
   return authInstance;
 }
 
@@ -416,14 +421,85 @@ function getShellBackendBaseUrl() {
   return `http://127.0.0.1:${DEFAULT_BACKEND_PORT}`;
 }
 
-function persistState() {
-  const serializable = {
+function getSerializableState() {
+  return {
     ...state,
     collapsedFolders: Array.from(new Set(state.collapsedFolders)),
     logs: state.logs.slice(0, 18),
   };
+}
+
+function getWorkspaceDocumentRef(user) {
+  if (!firestoreInstance || !user?.uid) {
+    return null;
+  }
+
+  return firestoreInstance.collection("novaideUsers").doc(user.uid).collection("workspaces").doc("primary");
+}
+
+async function saveWorkspaceToCloudNow() {
+  if (!cloudSyncReady || !authInstance?.currentUser) {
+    return;
+  }
+
+  const workspaceRef = getWorkspaceDocumentRef(authInstance.currentUser);
+
+  if (!workspaceRef) {
+    return;
+  }
+
+  await workspaceRef.set({
+    workspace: getSerializableState(),
+    email: authInstance.currentUser.email || "",
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+}
+
+function queueCloudWorkspaceSave() {
+  if (!cloudSyncReady) {
+    return;
+  }
+
+  window.clearTimeout(cloudSaveTimer);
+  cloudSaveTimer = window.setTimeout(() => {
+    saveWorkspaceToCloudNow().catch(() => {
+      pushLog("Cloud sync failed. Local workspace is still saved on this device.", "warn");
+    });
+  }, 700);
+}
+
+async function syncWorkspaceFromCloud(user) {
+  const workspaceRef = getWorkspaceDocumentRef(user);
+
+  if (!workspaceRef) {
+    cloudSyncReady = false;
+    return;
+  }
+
+  const snapshot = await workspaceRef.get();
+  const remoteWorkspace = snapshot.data()?.workspace;
+
+  if (remoteWorkspace && typeof remoteWorkspace === "object") {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteWorkspace));
+    state = loadState();
+    pushLog("Workspace loaded from your account.", "info");
+  } else {
+    await workspaceRef.set({
+      workspace: getSerializableState(),
+      email: user.email || "",
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    pushLog("Workspace backup created for this account.", "info");
+  }
+
+  cloudSyncReady = true;
+}
+
+function persistState() {
+  const serializable = getSerializableState();
 
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
+  queueCloudWorkspaceSave();
 }
 
 function clampPreviewWidth(width) {
@@ -2687,6 +2763,8 @@ elements.saveWorkspace.addEventListener("click", saveSnapshot);
 elements.downloadFile.addEventListener("click", downloadActiveFile);
 elements.signOut.addEventListener("click", async () => {
   clearApprovedAccess();
+  cloudSyncReady = false;
+  window.clearTimeout(cloudSaveTimer);
   try {
     const auth = await ensureFirebaseAuth();
     await auth.signOut();
@@ -2765,6 +2843,8 @@ ensureFirebaseAuth()
     auth.onAuthStateChanged(async (user) => {
       if (!applyAuthenticatedUser(user)) {
         clearApprovedAccess();
+        cloudSyncReady = false;
+        window.clearTimeout(cloudSaveTimer);
         return;
       }
 
@@ -2772,6 +2852,12 @@ ensureFirebaseAuth()
       const rememberedEmail = window.sessionStorage.getItem(APPROVED_ACCESS_KEY);
 
       if (rememberedEmail === normalizedEmail) {
+        try {
+          await syncWorkspaceFromCloud(user);
+        } catch (error) {
+          cloudSyncReady = false;
+          pushLog("Cloud sync is unavailable right now. Using this device's saved workspace.", "warn");
+        }
         renderAll();
         checkShellBackend();
         return;
@@ -2787,10 +2873,17 @@ ensureFirebaseAuth()
         rememberApprovedAccess(normalizedEmail);
       } catch (error) {
         clearApprovedAccess();
+        cloudSyncReady = false;
         window.location.href = "home.html";
         return;
       }
 
+      try {
+        await syncWorkspaceFromCloud(user);
+      } catch (error) {
+        cloudSyncReady = false;
+        pushLog("Cloud sync is unavailable right now. Using this device's saved workspace.", "warn");
+      }
       renderAll();
       checkShellBackend();
     });
