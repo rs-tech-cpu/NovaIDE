@@ -350,7 +350,7 @@ button {
 
 .workspace {
   display: grid;
-  grid-template-columns: 310px minmax(0, 1fr) 10px var(--right-sidebar-width);
+  grid-template-columns: 310px minmax(0, 1fr) 6px var(--right-sidebar-width);
   grid-template-rows: minmax(0, 1fr) 270px;
   grid-template-areas:
     "left editor gutter right"
@@ -366,7 +366,7 @@ body.terminal-collapsed .workspace {
 }
 
 body.explorer-collapsed .workspace {
-  grid-template-columns: minmax(0, 1fr) 10px var(--right-sidebar-width);
+  grid-template-columns: minmax(0, 1fr) 6px var(--right-sidebar-width);
   grid-template-areas:
     "editor gutter right"
     "bottom bottom bottom";
@@ -387,7 +387,7 @@ body.git-collapsed.explorer-collapsed .workspace {
 }
 
 body.explorer-collapsed.terminal-collapsed .workspace {
-  grid-template-columns: minmax(0, 1fr) 10px var(--right-sidebar-width);
+  grid-template-columns: minmax(0, 1fr) 6px var(--right-sidebar-width);
   grid-template-rows: minmax(0, 1fr);
   grid-template-areas: "editor gutter right";
 }
@@ -451,17 +451,17 @@ body.explorer-collapsed.git-collapsed.terminal-collapsed .workspace {
   width: 1px;
   transform: translateX(-50%);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(139, 233, 253, 0.18);
   transition: background 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
-  opacity: 0.28;
+  opacity: 0;
 }
 
 .sidebar-resizer:hover::before,
 .sidebar-resizer:focus-visible::before,
 body.is-resizing-sidebar .sidebar-resizer::before {
-  background: rgba(139, 233, 253, 0.28);
-  box-shadow: 0 0 6px rgba(139, 233, 253, 0.12);
-  opacity: 0.65;
+  background: rgba(139, 233, 253, 0.24);
+  box-shadow: 0 0 4px rgba(139, 233, 253, 0.08);
+  opacity: 0.4;
 }
 
 .sidebar-resizer:focus-visible {
