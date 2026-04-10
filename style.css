@@ -445,23 +445,23 @@ body.explorer-collapsed.git-collapsed.terminal-collapsed .workspace {
 .sidebar-resizer::before {
   content: "";
   position: absolute;
-  top: 18px;
-  bottom: 18px;
+  top: 24px;
+  bottom: 24px;
   left: 50%;
   width: 1px;
   transform: translateX(-50%);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.025);
   transition: background 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
-  opacity: 0.5;
+  opacity: 0.28;
 }
 
 .sidebar-resizer:hover::before,
 .sidebar-resizer:focus-visible::before,
 body.is-resizing-sidebar .sidebar-resizer::before {
-  background: rgba(139, 233, 253, 0.45);
-  box-shadow: 0 0 8px rgba(139, 233, 253, 0.18);
-  opacity: 0.9;
+  background: rgba(139, 233, 253, 0.28);
+  box-shadow: 0 0 6px rgba(139, 233, 253, 0.12);
+  opacity: 0.65;
 }
 
 .sidebar-resizer:focus-visible {
