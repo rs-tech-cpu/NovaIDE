@@ -943,6 +943,7 @@ function renderEditor() {
     elements.charCount.textContent = "0 chars";
     elements.runActiveFile.disabled = true;
     elements.runActiveFile.textContent = "Run Active File";
+    elements.runActiveFile.setAttribute("aria-label", "Run active file");
     elements.debugFile.textContent = "No file selected";
     elements.debugLanguage.textContent = "Text";
     return;
@@ -965,6 +966,10 @@ function renderEditor() {
   elements.runActiveFile.textContent = isOneCompilerRunnable(file.language)
     ? `Run ${getLanguageLabel(file.language)}`
     : "Run Active File";
+  elements.runActiveFile.setAttribute(
+    "aria-label",
+    isOneCompilerRunnable(file.language) ? `Run ${getLanguageLabel(file.language)}` : "Run active file"
+  );
   elements.debugFile.textContent = file.path;
   elements.debugLanguage.textContent = getLanguageLabel(file.language);
   elements.debugFiles.textContent = String(state.files.length);

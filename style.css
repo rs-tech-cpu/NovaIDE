@@ -49,6 +49,19 @@ body {
   overflow: hidden;
 }
 
+.workspace,
+.workspace * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.workspace::-webkit-scrollbar,
+.workspace *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 button,
 input,
 select,
@@ -784,11 +797,19 @@ body.git-collapsed .sidebar-resizer {
 }
 
 .pill--run {
-  background: linear-gradient(135deg, rgba(80, 250, 123, 0.18), rgba(139, 233, 253, 0.12));
-  color: var(--text-primary);
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: 0;
+  background: url("run-button.png") center / contain no-repeat;
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  flex: 0 0 auto;
 }
 
 .pill--run:disabled {
+  filter: grayscale(1);
   opacity: 0.45;
   cursor: not-allowed;
 }
