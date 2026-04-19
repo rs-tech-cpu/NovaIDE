@@ -1243,9 +1243,70 @@ function renderEditorSuggestions() {
   `).join("");
 }
 
+function extractVariableSuggestions(file) {
+  if (!file?.content) {
+    return [];
+  }
+
+  const patternsByLanguage = {
+    python: [
+      /^\s*([A-Za-z_]\w*)\s*=(?!=)/gm,
+    ],
+    javascript: [
+      /\b(?:const|let|var)\s+([A-Za-z_$]\w*)/g,
+      /^\s*([A-Za-z_$]\w*)\s*=(?!=)/gm,
+    ],
+    html: [],
+    css: [
+      /--([A-Za-z_-][\w-]*)\s*:/g,
+    ],
+    cpp: [
+      /\b(?:int|float|double|char|bool|auto|std::string)\s+([A-Za-z_]\w*)/g,
+    ],
+    csharp: [
+      /\b(?:string|int|double|float|bool|var)\s+([A-Za-z_]\w*)/g,
+    ],
+    swift: [
+      /\b(?:let|var)\s+([A-Za-z_]\w*)/g,
+    ],
+    java: [
+      /\b(?:String|int|double|float|boolean|var)\s+([A-Za-z_]\w*)/g,
+    ],
+  };
+
+  const patterns = patternsByLanguage[file.language] || [];
+  const seen = new Set();
+  const variables = [];
+
+  patterns.forEach((pattern) => {
+    for (const match of file.content.matchAll(pattern)) {
+      const rawName = match[1];
+      const label = file.language === "css" ? `--${rawName}` : rawName;
+
+      if (!label || seen.has(label)) {
+        continue;
+      }
+
+      seen.add(label);
+      variables.push({
+        label,
+        detail: "Variable from file",
+        insertText: label,
+      });
+    }
+  });
+
+  return variables;
+}
+
 function getEditorSuggestionContext() {
   const file = getActiveFile();
-  const suggestions = EDITOR_SUGGESTIONS[file?.language];
+  const suggestions = [
+    ...(EDITOR_SUGGESTIONS[file?.language] || []),
+    ...extractVariableSuggestions(file),
+  ].filter((item, index, items) => (
+    items.findIndex((candidate) => candidate.label === item.label) === index
+  ));
 
   if (!file || !suggestions) {
     return null;
