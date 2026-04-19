@@ -596,6 +596,12 @@ const EDITOR_SUGGESTIONS = {
     { label: "len", detail: "Built-in function", insertText: "len" },
     { label: "str", detail: "String constructor", insertText: "str" },
     { label: "int", detail: "Integer constructor", insertText: "int" },
+    { label: "list", detail: "List constructor", insertText: "list" },
+    { label: "dict", detail: "Dictionary constructor", insertText: "dict" },
+    { label: "enumerate", detail: "Indexed iteration", insertText: "enumerate" },
+    { label: "append", detail: "List method", insertText: "append" },
+    { label: "join", detail: "String method", insertText: "join" },
+    { label: "__init__", detail: "Initializer method", insertText: "__init__" },
   ],
   javascript: [
     { label: "console.log", detail: "Debug output", insertText: "console.log" },
@@ -608,6 +614,12 @@ const EDITOR_SUGGESTIONS = {
     { label: "return", detail: "Return statement", insertText: "return" },
     { label: "document.querySelector", detail: "DOM lookup", insertText: "document.querySelector" },
     { label: "fetch", detail: "HTTP request", insertText: "fetch" },
+    { label: "addEventListener", detail: "DOM event listener", insertText: "addEventListener" },
+    { label: "setTimeout", detail: "Delayed callback", insertText: "setTimeout" },
+    { label: "Promise", detail: "Async wrapper", insertText: "Promise" },
+    { label: "map", detail: "Array transform", insertText: "map" },
+    { label: "filter", detail: "Array filter", insertText: "filter" },
+    { label: "import", detail: "Module import", insertText: "import " },
   ],
   html: [
     { label: "<div>", detail: "Container element", insertText: "<div></div>" },
@@ -618,6 +630,11 @@ const EDITOR_SUGGESTIONS = {
     { label: "<form>", detail: "Form element", insertText: "<form></form>" },
     { label: "<main>", detail: "Main element", insertText: "<main></main>" },
     { label: "<article>", detail: "Article element", insertText: "<article></article>" },
+    { label: "<header>", detail: "Header element", insertText: "<header></header>" },
+    { label: "<footer>", detail: "Footer element", insertText: "<footer></footer>" },
+    { label: "<nav>", detail: "Navigation element", insertText: "<nav></nav>" },
+    { label: "<img>", detail: "Image element", insertText: "<img src=\"\" alt=\"\" />" },
+    { label: "<a>", detail: "Link element", insertText: "<a href=\"\"></a>" },
   ],
   css: [
     { label: "display", detail: "Layout property", insertText: "display" },
@@ -628,6 +645,11 @@ const EDITOR_SUGGESTIONS = {
     { label: "align-items", detail: "Cross-axis alignment", insertText: "align-items" },
     { label: "grid-template-columns", detail: "Grid columns", insertText: "grid-template-columns" },
     { label: "border-radius", detail: "Rounded corners", insertText: "border-radius" },
+    { label: "padding", detail: "Inner spacing", insertText: "padding" },
+    { label: "margin", detail: "Outer spacing", insertText: "margin" },
+    { label: "font-size", detail: "Text size", insertText: "font-size" },
+    { label: "box-shadow", detail: "Shadow effect", insertText: "box-shadow" },
+    { label: "@import", detail: "Stylesheet import", insertText: "@import " },
   ],
   cpp: [
     { label: "std::cout", detail: "Standard output", insertText: "std::cout" },
@@ -638,6 +660,11 @@ const EDITOR_SUGGESTIONS = {
     { label: "for", detail: "Loop statement", insertText: "for" },
     { label: "if", detail: "Conditional statement", insertText: "if" },
     { label: "return", detail: "Return statement", insertText: "return" },
+    { label: "std::vector", detail: "Dynamic array", insertText: "std::vector" },
+    { label: "std::map", detail: "Associative map", insertText: "std::map" },
+    { label: "#include", detail: "Header import", insertText: "#include " },
+    { label: "while", detail: "Loop statement", insertText: "while" },
+    { label: "class", detail: "Class declaration", insertText: "class " },
   ],
   csharp: [
     { label: "Console.WriteLine", detail: "Console output", insertText: "Console.WriteLine" },
@@ -648,6 +675,11 @@ const EDITOR_SUGGESTIONS = {
     { label: "private", detail: "Access modifier", insertText: "private" },
     { label: "if", detail: "Conditional statement", insertText: "if" },
     { label: "foreach", detail: "Collection loop", insertText: "foreach" },
+    { label: "using", detail: "Namespace import", insertText: "using " },
+    { label: "List", detail: "Generic list", insertText: "List" },
+    { label: "Task", detail: "Async task", insertText: "Task" },
+    { label: "async", detail: "Async modifier", insertText: "async" },
+    { label: "await", detail: "Await expression", insertText: "await" },
   ],
   swift: [
     { label: "print", detail: "Console output", insertText: "print" },
@@ -658,6 +690,11 @@ const EDITOR_SUGGESTIONS = {
     { label: "class", detail: "Class declaration", insertText: "class" },
     { label: "if", detail: "Conditional statement", insertText: "if" },
     { label: "for", detail: "Loop statement", insertText: "for" },
+    { label: "import", detail: "Module import", insertText: "import " },
+    { label: "guard", detail: "Early exit condition", insertText: "guard " },
+    { label: "return", detail: "Return statement", insertText: "return" },
+    { label: "init", detail: "Initializer", insertText: "init" },
+    { label: "extension", detail: "Type extension", insertText: "extension " },
   ],
   java: [
     { label: "System.out.println", detail: "Console output", insertText: "System.out.println" },
@@ -668,6 +705,85 @@ const EDITOR_SUGGESTIONS = {
     { label: "private", detail: "Access modifier", insertText: "private" },
     { label: "class", detail: "Class declaration", insertText: "class" },
     { label: "return", detail: "Return statement", insertText: "return" },
+    { label: "import", detail: "Package import", insertText: "import " },
+    { label: "List", detail: "Collection interface", insertText: "List" },
+    { label: "ArrayList", detail: "Resizable list", insertText: "ArrayList" },
+    { label: "Scanner", detail: "Input reader", insertText: "Scanner" },
+    { label: "static", detail: "Static modifier", insertText: "static" },
+  ],
+};
+
+const EDITOR_IMPORT_SUGGESTIONS = {
+  python: [
+    { label: "os", detail: "Module", insertText: "os" },
+    { label: "sys", detail: "Module", insertText: "sys" },
+    { label: "math", detail: "Module", insertText: "math" },
+    { label: "json", detail: "Module", insertText: "json" },
+    { label: "random", detail: "Module", insertText: "random" },
+    { label: "datetime", detail: "Module", insertText: "datetime" },
+    { label: "pathlib", detail: "Module", insertText: "pathlib" },
+    { label: "collections", detail: "Module", insertText: "collections" },
+    { label: "itertools", detail: "Module", insertText: "itertools" },
+    { label: "asyncio", detail: "Module", insertText: "asyncio" },
+  ],
+  javascript: [
+    { label: "react", detail: "Package", insertText: "react" },
+    { label: "express", detail: "Package", insertText: "express" },
+    { label: "axios", detail: "Package", insertText: "axios" },
+    { label: "lodash", detail: "Package", insertText: "lodash" },
+    { label: "fs", detail: "Node module", insertText: "fs" },
+    { label: "path", detail: "Node module", insertText: "path" },
+    { label: "http", detail: "Node module", insertText: "http" },
+    { label: "https", detail: "Node module", insertText: "https" },
+    { label: "url", detail: "Node module", insertText: "url" },
+    { label: "events", detail: "Node module", insertText: "events" },
+  ],
+  css: [
+    { label: "reset.css", detail: "Stylesheet", insertText: "reset.css" },
+    { label: "theme.css", detail: "Stylesheet", insertText: "theme.css" },
+    { label: "fonts.css", detail: "Stylesheet", insertText: "fonts.css" },
+    { label: "base.css", detail: "Stylesheet", insertText: "base.css" },
+  ],
+  cpp: [
+    { label: "iostream", detail: "Header", insertText: "iostream" },
+    { label: "vector", detail: "Header", insertText: "vector" },
+    { label: "string", detail: "Header", insertText: "string" },
+    { label: "map", detail: "Header", insertText: "map" },
+    { label: "unordered_map", detail: "Header", insertText: "unordered_map" },
+    { label: "memory", detail: "Header", insertText: "memory" },
+    { label: "algorithm", detail: "Header", insertText: "algorithm" },
+    { label: "fstream", detail: "Header", insertText: "fstream" },
+    { label: "sstream", detail: "Header", insertText: "sstream" },
+    { label: "iomanip", detail: "Header", insertText: "iomanip" },
+  ],
+  csharp: [
+    { label: "System", detail: "Namespace", insertText: "System" },
+    { label: "System.IO", detail: "Namespace", insertText: "System.IO" },
+    { label: "System.Linq", detail: "Namespace", insertText: "System.Linq" },
+    { label: "System.Text", detail: "Namespace", insertText: "System.Text" },
+    { label: "System.Net.Http", detail: "Namespace", insertText: "System.Net.Http" },
+    { label: "System.Threading.Tasks", detail: "Namespace", insertText: "System.Threading.Tasks" },
+    { label: "System.Collections.Generic", detail: "Namespace", insertText: "System.Collections.Generic" },
+    { label: "Microsoft.AspNetCore.Mvc", detail: "Namespace", insertText: "Microsoft.AspNetCore.Mvc" },
+  ],
+  swift: [
+    { label: "Foundation", detail: "Module", insertText: "Foundation" },
+    { label: "SwiftUI", detail: "Module", insertText: "SwiftUI" },
+    { label: "UIKit", detail: "Module", insertText: "UIKit" },
+    { label: "Combine", detail: "Module", insertText: "Combine" },
+    { label: "CoreData", detail: "Module", insertText: "CoreData" },
+    { label: "AVFoundation", detail: "Module", insertText: "AVFoundation" },
+    { label: "MapKit", detail: "Module", insertText: "MapKit" },
+  ],
+  java: [
+    { label: "java.util.List", detail: "Package", insertText: "java.util.List" },
+    { label: "java.util.ArrayList", detail: "Package", insertText: "java.util.ArrayList" },
+    { label: "java.util.Map", detail: "Package", insertText: "java.util.Map" },
+    { label: "java.util.HashMap", detail: "Package", insertText: "java.util.HashMap" },
+    { label: "java.util.Scanner", detail: "Package", insertText: "java.util.Scanner" },
+    { label: "java.time.LocalDate", detail: "Package", insertText: "java.time.LocalDate" },
+    { label: "java.nio.file.Files", detail: "Package", insertText: "java.nio.file.Files" },
+    { label: "java.nio.file.Paths", detail: "Package", insertText: "java.nio.file.Paths" },
   ],
 };
 
@@ -1362,21 +1478,139 @@ function extractVariableSuggestions(file) {
   return variables;
 }
 
-function getEditorSuggestionContext() {
-  const file = getActiveFile();
-  const suggestions = [
-    ...(EDITOR_SUGGESTIONS[file?.language] || []),
-    ...extractVariableSuggestions(file),
-  ].filter((item, index, items) => (
-    items.findIndex((candidate) => candidate.label === item.label) === index
+function dedupeSuggestions(items) {
+  return items.filter((item, index, suggestions) => (
+    suggestions.findIndex((candidate) => candidate.label.toLowerCase() === item.label.toLowerCase()) === index
   ));
+}
 
-  if (!file || !suggestions) {
+function getWorkspaceImportSuggestions(file) {
+  if (!file) {
+    return [];
+  }
+
+  if (file.language === "python") {
+    return dedupeSuggestions(state.files
+      .filter((candidate) => candidate.path !== file.path && candidate.language === "python")
+      .map((candidate) => candidate.path.replace(/\.py$/i, "").replace(/\//g, "."))
+      .filter(Boolean)
+      .map((label) => ({
+        label,
+        detail: "Workspace module",
+        insertText: label,
+      })));
+  }
+
+  if (file.language === "javascript") {
+    return dedupeSuggestions(state.files
+      .filter((candidate) => candidate.path !== file.path && candidate.language === "javascript")
+      .map((candidate) => ({
+        label: `./${candidate.path}`,
+        detail: "Workspace module",
+        insertText: `./${candidate.path}`,
+      })));
+  }
+
+  if (file.language === "css") {
+    return dedupeSuggestions(state.files
+      .filter((candidate) => candidate.path !== file.path && candidate.language === "css")
+      .map((candidate) => ({
+        label: candidate.path,
+        detail: "Workspace stylesheet",
+        insertText: candidate.path,
+      })));
+  }
+
+  return [];
+}
+
+function getImportSuggestionContext(file, value, cursor) {
+  if (!file) {
     return null;
   }
 
-  const cursor = elements.editorInput.selectionStart || 0;
+  const lineStart = value.lastIndexOf("\n", Math.max(0, cursor - 1)) + 1;
+  const lineBeforeCursor = value.slice(lineStart, cursor);
+  const matchersByLanguage = {
+    python: [
+      /^\s*import\s+([A-Za-z0-9_\.]*)$/,
+      /^\s*from\s+([A-Za-z0-9_\.]*)$/,
+    ],
+    javascript: [
+      /^\s*import\s+["']?([@A-Za-z0-9_./-]*)$/,
+      /^\s*import[\s\S]*?\sfrom\s+["']([@A-Za-z0-9_./-]*)$/,
+      /\brequire\(\s*["']([@A-Za-z0-9_./-]*)$/,
+      /^\s*export[\s\S]*?\sfrom\s+["']([@A-Za-z0-9_./-]*)$/,
+    ],
+    css: [
+      /^\s*@import\s+(?:url\()?["']?([@A-Za-z0-9_./-]*)$/,
+    ],
+    cpp: [
+      /^\s*#include\s+[<"]([A-Za-z0-9_./-]*)$/,
+    ],
+    csharp: [
+      /^\s*using\s+([A-Za-z0-9_\.]*)$/,
+    ],
+    swift: [
+      /^\s*import\s+([A-Za-z0-9_\.]*)$/,
+    ],
+    java: [
+      /^\s*import\s+([A-Za-z0-9_\.\*]*)$/,
+    ],
+  };
+
+  const matchers = matchersByLanguage[file.language] || [];
+
+  for (const matcher of matchers) {
+    const match = lineBeforeCursor.match(matcher);
+
+    if (!match) {
+      continue;
+    }
+
+    const query = match[1] || "";
+    const suggestions = dedupeSuggestions([
+      ...(EDITOR_IMPORT_SUGGESTIONS[file.language] || []),
+      ...getWorkspaceImportSuggestions(file),
+    ]);
+    const items = suggestions
+      .filter((item) => item.label.toLowerCase().startsWith(query.toLowerCase()))
+      .slice(0, 10);
+
+    if (!items.length) {
+      return null;
+    }
+
+    return {
+      items,
+      range: {
+        start: cursor - query.length,
+        end: cursor,
+      },
+    };
+  }
+
+  return null;
+}
+
+function getEditorSuggestionContext() {
+  const file = getActiveFile();
+  if (!file) {
+    return null;
+  }
+
   const value = elements.editorInput.value;
+  const cursor = elements.editorInput.selectionStart || 0;
+  const importContext = getImportSuggestionContext(file, value, cursor);
+
+  if (importContext) {
+    return importContext;
+  }
+
+  const suggestions = dedupeSuggestions([
+    ...(EDITOR_SUGGESTIONS[file.language] || []),
+    ...extractVariableSuggestions(file),
+  ]);
   const prefixMatch = value.slice(0, cursor).match(/[\w<./-]+$/);
   const query = prefixMatch?.[0] || "";
 
