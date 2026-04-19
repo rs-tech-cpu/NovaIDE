@@ -902,6 +902,54 @@ body.preview-collapsed .editor-surface {
   overflow: hidden;
 }
 
+.editor-suggestions {
+  position: absolute;
+  z-index: 6;
+  min-width: 240px;
+  max-width: min(420px, calc(100% - 16px));
+  max-height: 260px;
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(28, 31, 42, 0.96);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.35);
+  padding: 6px;
+}
+
+.editor-suggestions[hidden] {
+  display: none;
+}
+
+.editor-suggestions__item {
+  width: 100%;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  padding: 10px 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+}
+
+.editor-suggestions__item.is-active,
+.editor-suggestions__item:hover {
+  background: rgba(139, 233, 253, 0.12);
+  color: var(--text-primary);
+}
+
+.editor-suggestions__label {
+  font: 600 0.92rem/1.2 var(--editor-font);
+}
+
+.editor-suggestions__detail {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
 .code-editor__highlight,
 .code-editor__input {
   position: absolute;

@@ -29,6 +29,7 @@ const elements = {
   lineNumbers: document.querySelector("[data-line-numbers]"),
   highlightCode: document.querySelector("[data-highlight-code]"),
   editorInput: document.querySelector("[data-editor-input]"),
+  editorSuggestions: document.querySelector("[data-editor-suggestions]"),
   editorSurface: document.querySelector("[data-editor-surface]"),
   previewFrame: document.querySelector("[data-preview-frame]"),
   previewResizer: document.querySelector("[data-preview-resizer]"),
@@ -288,6 +289,11 @@ let terminalPendingAction = null;
 let cloudSaveTimer = null;
 let firestoreInstance = null;
 let cloudSyncReady = false;
+let suggestionState = {
+  items: [],
+  activeIndex: 0,
+  range: null,
+};
 let shellBackend = {
   available: false,
   baseUrl: "",
@@ -572,6 +578,38 @@ function getFileName(path) {
   const segments = path.split("/");
   return segments[segments.length - 1];
 }
+
+const EDITOR_SUGGESTIONS = {
+  python: [
+    { label: "print", detail: "Output text", insertText: "print" },
+    { label: "pass", detail: "No-op statement", insertText: "pass" },
+    { label: "pow", detail: "Power function", insertText: "pow" },
+    { label: "property", detail: "Decorator", insertText: "property" },
+    { label: "range", detail: "Sequence generator", insertText: "range" },
+    { label: "len", detail: "Built-in function", insertText: "len" },
+    { label: "str", detail: "String constructor", insertText: "str" },
+    { label: "int", detail: "Integer constructor", insertText: "int" },
+  ],
+  javascript: [
+    { label: "console.log", detail: "Debug output", insertText: "console.log" },
+    { label: "const", detail: "Constant binding", insertText: "const" },
+    { label: "function", detail: "Function declaration", insertText: "function" },
+    { label: "return", detail: "Return statement", insertText: "return" },
+    { label: "document.querySelector", detail: "DOM lookup", insertText: "document.querySelector" },
+  ],
+  html: [
+    { label: "<div>", detail: "Container element", insertText: "<div></div>" },
+    { label: "<section>", detail: "Section element", insertText: "<section></section>" },
+    { label: "<button>", detail: "Button element", insertText: "<button></button>" },
+    { label: "<script>", detail: "Script tag", insertText: "<script></script>" },
+  ],
+  css: [
+    { label: "display", detail: "Layout property", insertText: "display" },
+    { label: "position", detail: "Position property", insertText: "position" },
+    { label: "background", detail: "Background property", insertText: "background" },
+    { label: "color", detail: "Text color", insertText: "color" },
+  ],
+};
 
 function collectFoldersFromFiles(files) {
   const folders = new Set();
@@ -1007,6 +1045,7 @@ function renderEditor() {
   const file = getActiveFile();
 
   if (!file) {
+    hideEditorSuggestions();
     elements.editorInput.value = "";
     elements.highlightCode.innerHTML = "";
     elements.lineNumbers.innerHTML = '<span>01</span>';
@@ -1024,6 +1063,10 @@ function renderEditor() {
 
   if (elements.editorInput.value !== file.content) {
     elements.editorInput.value = file.content;
+  }
+
+  if (!EDITOR_SUGGESTIONS[file.language]) {
+    hideEditorSuggestions();
   }
 
   elements.highlightCode.innerHTML = `${highlightCode(file.content, file.language)}\n`;
@@ -1108,6 +1151,161 @@ function renderChatMessageBody(content) {
   }
 
   return rendered.join("");
+}
+
+function hideEditorSuggestions() {
+  suggestionState.items = [];
+  suggestionState.activeIndex = 0;
+  suggestionState.range = null;
+  elements.editorSuggestions.hidden = true;
+  elements.editorSuggestions.innerHTML = "";
+}
+
+function getEditorCaretPosition() {
+  const textarea = elements.editorInput;
+  const stage = textarea.parentElement;
+
+  if (!textarea || !stage) {
+    return { left: 16, top: 16 };
+  }
+
+  const mirror = document.createElement("div");
+  const computed = window.getComputedStyle(textarea);
+  const properties = [
+    "fontFamily",
+    "fontSize",
+    "fontWeight",
+    "fontStyle",
+    "letterSpacing",
+    "textTransform",
+    "wordSpacing",
+    "textIndent",
+    "boxSizing",
+    "borderLeftWidth",
+    "borderRightWidth",
+    "borderTopWidth",
+    "borderBottomWidth",
+    "paddingLeft",
+    "paddingRight",
+    "paddingTop",
+    "paddingBottom",
+    "lineHeight",
+    "whiteSpace",
+    "tabSize",
+    "width",
+  ];
+
+  mirror.style.position = "absolute";
+  mirror.style.visibility = "hidden";
+  mirror.style.pointerEvents = "none";
+  mirror.style.whiteSpace = "pre-wrap";
+  mirror.style.wordWrap = "break-word";
+  mirror.style.overflow = "hidden";
+
+  properties.forEach((property) => {
+    mirror.style[property] = computed[property];
+  });
+
+  mirror.textContent = textarea.value.slice(0, textarea.selectionStart);
+  const marker = document.createElement("span");
+  marker.textContent = "\u200b";
+  mirror.appendChild(marker);
+  stage.appendChild(mirror);
+
+  const left = marker.offsetLeft - textarea.scrollLeft;
+  const top = marker.offsetTop - textarea.scrollTop;
+  const height = marker.offsetHeight || parseFloat(computed.lineHeight) || 18;
+
+  stage.removeChild(mirror);
+
+  return { left, top: top + height };
+}
+
+function renderEditorSuggestions() {
+  if (!suggestionState.items.length) {
+    hideEditorSuggestions();
+    return;
+  }
+
+  const caret = getEditorCaretPosition();
+  elements.editorSuggestions.hidden = false;
+  elements.editorSuggestions.style.left = `${Math.max(8, caret.left + 8)}px`;
+  elements.editorSuggestions.style.top = `${Math.max(8, caret.top + 8)}px`;
+  elements.editorSuggestions.innerHTML = suggestionState.items.map((item, index) => `
+    <button
+      class="editor-suggestions__item ${index === suggestionState.activeIndex ? "is-active" : ""}"
+      type="button"
+      data-suggestion-index="${index}"
+    >
+      <span class="editor-suggestions__label">${escapeHtml(item.label)}</span>
+      <span class="editor-suggestions__detail">${escapeHtml(item.detail)}</span>
+    </button>
+  `).join("");
+}
+
+function getEditorSuggestionContext() {
+  const file = getActiveFile();
+  const suggestions = EDITOR_SUGGESTIONS[file?.language];
+
+  if (!file || !suggestions) {
+    return null;
+  }
+
+  const cursor = elements.editorInput.selectionStart || 0;
+  const value = elements.editorInput.value;
+  const prefixMatch = value.slice(0, cursor).match(/[\w<./-]+$/);
+  const query = prefixMatch?.[0] || "";
+
+  if (!query || query.length < 1) {
+    return null;
+  }
+
+  const start = cursor - query.length;
+  const matches = suggestions.filter((item) => item.label.toLowerCase().startsWith(query.toLowerCase()))
+    .slice(0, 8);
+
+  if (!matches.length) {
+    return null;
+  }
+
+  return {
+    items: matches,
+    range: { start, end: cursor },
+  };
+}
+
+function updateEditorSuggestions() {
+  const context = getEditorSuggestionContext();
+
+  if (!context) {
+    hideEditorSuggestions();
+    return;
+  }
+
+  suggestionState.items = context.items;
+  suggestionState.range = context.range;
+  suggestionState.activeIndex = Math.min(suggestionState.activeIndex, context.items.length - 1);
+  renderEditorSuggestions();
+}
+
+function applyEditorSuggestion(index = suggestionState.activeIndex) {
+  const suggestion = suggestionState.items[index];
+  const range = suggestionState.range;
+
+  if (!suggestion || !range) {
+    return false;
+  }
+
+  const value = elements.editorInput.value;
+  const nextValue = `${value.slice(0, range.start)}${suggestion.insertText}${value.slice(range.end)}`;
+  const nextCursor = range.start + suggestion.insertText.length;
+
+  elements.editorInput.value = nextValue;
+  elements.editorInput.selectionStart = nextCursor;
+  elements.editorInput.selectionEnd = nextCursor;
+  hideEditorSuggestions();
+  elements.editorInput.dispatchEvent(new Event("input"));
+  return true;
 }
 
 function getVisibleEntriesForCwd() {
@@ -2578,19 +2776,52 @@ elements.editorInput.addEventListener("input", () => {
   renderSummary();
   renderDebugPanel();
   schedulePreviewRender();
+  updateEditorSuggestions();
 });
 
 elements.editorInput.addEventListener("scroll", () => {
   elements.highlightCode.parentElement.scrollTop = elements.editorInput.scrollTop;
   elements.highlightCode.parentElement.scrollLeft = elements.editorInput.scrollLeft;
   elements.lineNumbers.scrollTop = elements.editorInput.scrollTop;
+  renderEditorSuggestions();
 });
 
 ["click", "keyup"].forEach((eventName) => {
-  elements.editorInput.addEventListener(eventName, updateCursorStats);
+  elements.editorInput.addEventListener(eventName, () => {
+    updateCursorStats();
+    updateEditorSuggestions();
+  });
 });
 
 elements.editorInput.addEventListener("keydown", (event) => {
+  if (suggestionState.items.length) {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      suggestionState.activeIndex = (suggestionState.activeIndex + 1) % suggestionState.items.length;
+      renderEditorSuggestions();
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      suggestionState.activeIndex = (suggestionState.activeIndex - 1 + suggestionState.items.length) % suggestionState.items.length;
+      renderEditorSuggestions();
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === "Tab") {
+      event.preventDefault();
+      applyEditorSuggestion();
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      hideEditorSuggestions();
+      return;
+    }
+  }
+
   if (event.key === "Tab") {
     event.preventDefault();
     const start = elements.editorInput.selectionStart;
@@ -2602,6 +2833,18 @@ elements.editorInput.addEventListener("keydown", (event) => {
     elements.editorInput.selectionStart = elements.editorInput.selectionEnd = start + insertion.length;
     elements.editorInput.dispatchEvent(new Event("input"));
   }
+});
+
+elements.editorSuggestions.addEventListener("mousedown", (event) => {
+  const button = event.target.closest("[data-suggestion-index]");
+
+  if (!button) {
+    return;
+  }
+
+  event.preventDefault();
+  applyEditorSuggestion(Number(button.dataset.suggestionIndex));
+  elements.editorInput.focus();
 });
 
 document.querySelector("[data-import-trigger]").addEventListener("click", () => {
