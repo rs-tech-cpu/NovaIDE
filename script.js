@@ -2697,6 +2697,14 @@ async function sendChatMessage() {
   const userMessage = { role: "user", content: prompt };
   state.chatMessages.push(userMessage);
   state.chatMessages = state.chatMessages.slice(-12);
+  const recentHistory = state.chatMessages
+    .slice(0, -1)
+    .slice(-10)
+    .map((message) => ({
+      role: message.role === "assistant" ? "assistant" : "user",
+      content: String(message.content || ""),
+    }))
+    .filter((message) => message.content.trim());
   elements.chatInput.value = "";
   elements.chatStatus.textContent = "Thinking";
   elements.chatSend.disabled = true;
@@ -2712,6 +2720,7 @@ async function sendChatMessage() {
       body: JSON.stringify({
         model: normalizeChatModel(state.openrouterModel),
         prompt,
+        history: recentHistory,
         workspaceContext: buildWorkspaceContext(),
       }),
     });
