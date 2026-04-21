@@ -602,6 +602,10 @@ const EDITOR_SUGGESTIONS = {
     { label: "append", detail: "List method", insertText: "append" },
     { label: "join", detail: "String method", insertText: "join" },
     { label: "__init__", detail: "Initializer method", insertText: "__init__" },
+    { label: "open", detail: "File function", insertText: "open" },
+    { label: "with", detail: "Context manager", insertText: "with " },
+    { label: "except", detail: "Exception handler", insertText: "except " },
+    { label: "format", detail: "String method", insertText: "format" },
   ],
   javascript: [
     { label: "console.log", detail: "Debug output", insertText: "console.log" },
@@ -620,6 +624,10 @@ const EDITOR_SUGGESTIONS = {
     { label: "map", detail: "Array transform", insertText: "map" },
     { label: "filter", detail: "Array filter", insertText: "filter" },
     { label: "import", detail: "Module import", insertText: "import " },
+    { label: "forEach", detail: "Array iteration", insertText: "forEach" },
+    { label: "querySelectorAll", detail: "DOM lookup list", insertText: "querySelectorAll" },
+    { label: "JSON.parse", detail: "Parse JSON", insertText: "JSON.parse" },
+    { label: "JSON.stringify", detail: "Serialize JSON", insertText: "JSON.stringify" },
   ],
   html: [
     { label: "<div>", detail: "Container element", insertText: "<div></div>" },
@@ -635,6 +643,10 @@ const EDITOR_SUGGESTIONS = {
     { label: "<nav>", detail: "Navigation element", insertText: "<nav></nav>" },
     { label: "<img>", detail: "Image element", insertText: "<img src=\"\" alt=\"\" />" },
     { label: "<a>", detail: "Link element", insertText: "<a href=\"\"></a>" },
+    { label: "<span>", detail: "Inline element", insertText: "<span></span>" },
+    { label: "<ul>", detail: "Unordered list", insertText: "<ul></ul>" },
+    { label: "<li>", detail: "List item", insertText: "<li></li>" },
+    { label: "<label>", detail: "Form label", insertText: "<label></label>" },
   ],
   css: [
     { label: "display", detail: "Layout property", insertText: "display" },
@@ -650,6 +662,10 @@ const EDITOR_SUGGESTIONS = {
     { label: "font-size", detail: "Text size", insertText: "font-size" },
     { label: "box-shadow", detail: "Shadow effect", insertText: "box-shadow" },
     { label: "@import", detail: "Stylesheet import", insertText: "@import " },
+    { label: "gap", detail: "Flex or grid gap", insertText: "gap" },
+    { label: "transition", detail: "Animation timing", insertText: "transition" },
+    { label: "width", detail: "Width property", insertText: "width" },
+    { label: "height", detail: "Height property", insertText: "height" },
   ],
   cpp: [
     { label: "std::cout", detail: "Standard output", insertText: "std::cout" },
@@ -665,6 +681,10 @@ const EDITOR_SUGGESTIONS = {
     { label: "#include", detail: "Header import", insertText: "#include " },
     { label: "while", detail: "Loop statement", insertText: "while" },
     { label: "class", detail: "Class declaration", insertText: "class " },
+    { label: "std::endl", detail: "Line break manipulator", insertText: "std::endl" },
+    { label: "auto", detail: "Type inference", insertText: "auto" },
+    { label: "bool", detail: "Boolean type", insertText: "bool" },
+    { label: "std::unordered_map", detail: "Hash map", insertText: "std::unordered_map" },
   ],
   csharp: [
     { label: "Console.WriteLine", detail: "Console output", insertText: "Console.WriteLine" },
@@ -680,6 +700,10 @@ const EDITOR_SUGGESTIONS = {
     { label: "Task", detail: "Async task", insertText: "Task" },
     { label: "async", detail: "Async modifier", insertText: "async" },
     { label: "await", detail: "Await expression", insertText: "await" },
+    { label: "namespace", detail: "Namespace declaration", insertText: "namespace " },
+    { label: "DateTime", detail: "Date and time type", insertText: "DateTime" },
+    { label: "ToString", detail: "Object string conversion", insertText: "ToString" },
+    { label: "Count", detail: "Collection size property", insertText: "Count" },
   ],
   swift: [
     { label: "print", detail: "Console output", insertText: "print" },
@@ -695,6 +719,10 @@ const EDITOR_SUGGESTIONS = {
     { label: "return", detail: "Return statement", insertText: "return" },
     { label: "init", detail: "Initializer", insertText: "init" },
     { label: "extension", detail: "Type extension", insertText: "extension " },
+    { label: "nil", detail: "Empty optional value", insertText: "nil" },
+    { label: "Optional", detail: "Optional type", insertText: "Optional" },
+    { label: "guard let", detail: "Optional binding", insertText: "guard let " },
+    { label: "DispatchQueue.main.async", detail: "Main thread dispatch", insertText: "DispatchQueue.main.async" },
   ],
   java: [
     { label: "System.out.println", detail: "Console output", insertText: "System.out.println" },
@@ -710,6 +738,10 @@ const EDITOR_SUGGESTIONS = {
     { label: "ArrayList", detail: "Resizable list", insertText: "ArrayList" },
     { label: "Scanner", detail: "Input reader", insertText: "Scanner" },
     { label: "static", detail: "Static modifier", insertText: "static" },
+    { label: "HashMap", detail: "Key-value map", insertText: "HashMap" },
+    { label: "forEach", detail: "Collection iteration", insertText: "forEach" },
+    { label: "new", detail: "Object creation", insertText: "new" },
+    { label: "extends", detail: "Class inheritance", insertText: "extends" },
   ],
 };
 
@@ -725,6 +757,8 @@ const EDITOR_IMPORT_SUGGESTIONS = {
     { label: "collections", detail: "Module", insertText: "collections" },
     { label: "itertools", detail: "Module", insertText: "itertools" },
     { label: "asyncio", detail: "Module", insertText: "asyncio" },
+    { label: "re", detail: "Module", insertText: "re" },
+    { label: "typing", detail: "Module", insertText: "typing" },
   ],
   javascript: [
     { label: "react", detail: "Package", insertText: "react" },
@@ -737,6 +771,8 @@ const EDITOR_IMPORT_SUGGESTIONS = {
     { label: "https", detail: "Node module", insertText: "https" },
     { label: "url", detail: "Node module", insertText: "url" },
     { label: "events", detail: "Node module", insertText: "events" },
+    { label: "crypto", detail: "Node module", insertText: "crypto" },
+    { label: "stream", detail: "Node module", insertText: "stream" },
   ],
   css: [
     { label: "reset.css", detail: "Stylesheet", insertText: "reset.css" },
@@ -755,6 +791,8 @@ const EDITOR_IMPORT_SUGGESTIONS = {
     { label: "fstream", detail: "Header", insertText: "fstream" },
     { label: "sstream", detail: "Header", insertText: "sstream" },
     { label: "iomanip", detail: "Header", insertText: "iomanip" },
+    { label: "set", detail: "Header", insertText: "set" },
+    { label: "utility", detail: "Header", insertText: "utility" },
   ],
   csharp: [
     { label: "System", detail: "Namespace", insertText: "System" },
@@ -765,6 +803,8 @@ const EDITOR_IMPORT_SUGGESTIONS = {
     { label: "System.Threading.Tasks", detail: "Namespace", insertText: "System.Threading.Tasks" },
     { label: "System.Collections.Generic", detail: "Namespace", insertText: "System.Collections.Generic" },
     { label: "Microsoft.AspNetCore.Mvc", detail: "Namespace", insertText: "Microsoft.AspNetCore.Mvc" },
+    { label: "System.Text.Json", detail: "Namespace", insertText: "System.Text.Json" },
+    { label: "System.Collections", detail: "Namespace", insertText: "System.Collections" },
   ],
   swift: [
     { label: "Foundation", detail: "Module", insertText: "Foundation" },
@@ -774,6 +814,8 @@ const EDITOR_IMPORT_SUGGESTIONS = {
     { label: "CoreData", detail: "Module", insertText: "CoreData" },
     { label: "AVFoundation", detail: "Module", insertText: "AVFoundation" },
     { label: "MapKit", detail: "Module", insertText: "MapKit" },
+    { label: "CoreGraphics", detail: "Module", insertText: "CoreGraphics" },
+    { label: "PhotosUI", detail: "Module", insertText: "PhotosUI" },
   ],
   java: [
     { label: "java.util.List", detail: "Package", insertText: "java.util.List" },
@@ -784,6 +826,8 @@ const EDITOR_IMPORT_SUGGESTIONS = {
     { label: "java.time.LocalDate", detail: "Package", insertText: "java.time.LocalDate" },
     { label: "java.nio.file.Files", detail: "Package", insertText: "java.nio.file.Files" },
     { label: "java.nio.file.Paths", detail: "Package", insertText: "java.nio.file.Paths" },
+    { label: "java.util.Collections", detail: "Package", insertText: "java.util.Collections" },
+    { label: "java.util.Optional", detail: "Package", insertText: "java.util.Optional" },
   ],
 };
 
@@ -1484,6 +1528,16 @@ function dedupeSuggestions(items) {
   ));
 }
 
+function hasExactSuggestionMatch(query, suggestions) {
+  const normalizedQuery = String(query || "").trim().toLowerCase();
+
+  if (!normalizedQuery) {
+    return false;
+  }
+
+  return suggestions.some((item) => item.label.trim().toLowerCase() === normalizedQuery);
+}
+
 function getWorkspaceImportSuggestions(file) {
   if (!file) {
     return [];
@@ -1573,6 +1627,11 @@ function getImportSuggestionContext(file, value, cursor) {
       ...(EDITOR_IMPORT_SUGGESTIONS[file.language] || []),
       ...getWorkspaceImportSuggestions(file),
     ]);
+
+    if (hasExactSuggestionMatch(query, suggestions)) {
+      return null;
+    }
+
     const items = suggestions
       .filter((item) => item.label.toLowerCase().startsWith(query.toLowerCase()))
       .slice(0, 10);
@@ -1615,6 +1674,10 @@ function getEditorSuggestionContext() {
   const query = prefixMatch?.[0] || "";
 
   if (!query || query.length < 1) {
+    return null;
+  }
+
+  if (hasExactSuggestionMatch(query, suggestions)) {
     return null;
   }
 
