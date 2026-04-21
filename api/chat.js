@@ -31,6 +31,18 @@ function normalizeHistory(history) {
     .slice(-10);
 }
 
+function buildConversationContext(history) {
+  const normalized = normalizeHistory(history);
+
+  if (!normalized.length) {
+    return "";
+  }
+
+  return normalized
+    .map((entry) => `${entry.role === "model" ? "Assistant" : "User"}: ${entry.text}`)
+    .join("\n\n");
+}
+
 export default async function handler(request, response) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
@@ -53,20 +65,17 @@ export default async function handler(request, response) {
   }
 
   try {
+    const conversationContext = buildConversationContext(history);
     const contents = [
-      ...normalizeHistory(history).map((entry) => ({
-        role: entry.role,
-        parts: [
-          {
-            text: entry.text,
-          },
-        ],
-      })),
       {
         role: "user",
         parts: [
           {
-            text: `${workspaceContext}\n\nUser request:\n${prompt}`,
+            text: [
+              workspaceContext ? `Workspace context:\n${workspaceContext}` : "",
+              conversationContext ? `Recent conversation:\n${conversationContext}` : "",
+              `Latest user request:\n${prompt}`,
+            ].filter(Boolean).join("\n\n"),
           },
         ],
       },
@@ -84,7 +93,7 @@ export default async function handler(request, response) {
         system_instruction: {
           parts: [
             {
-              text: "You are a helpful coding assistant inside a browser IDE. Use the provided workspace context and recent conversation history to answer clearly, concretely, and practically. Keep follow-up answers grounded in the earlier turns of the same chat. If the latest user message is ambiguous, interpret it in the context of the immediately preceding conversation before answering. Do not default to describing yourself when the user is clearly following up on a prior topic, riddle, example, or code discussion. For example, if the user asks a riddle and then says they do not know or asks 'who are you?', treat that as a request for the riddle answer, not your own identity. Whenever you provide code, wrap it in triple backticks and include the language tag when possible. If the user asks for a simple code snippet such as a hello world example, prefer returning only the fenced code block unless extra explanation is explicitly needed. This IDE runs supported code through OneCompiler, so do not suggest pip install, package manager installation steps, or dependency setup commands as if they can be executed here. If a user asks for a library that may not be available, say that OneCompiler may only support standard libraries or preinstalled packages and suggest a fallback when possible.",
+              text: "You are a helpful coding assistant inside a browser IDE. Answer clearly, concretely, and practically. Use any provided workspace context and recent conversation transcript to keep follow-up answers consistent with the ongoing chat. Whenever you provide code, wrap it in triple backticks and include the language tag when possible. If the user asks for a simple code snippet such as a hello world example, prefer returning only the fenced code block unless extra explanation is explicitly needed. This IDE runs supported code through OneCompiler, so do not suggest pip install, package manager installation steps, or dependency setup commands as if they can be executed here. If a user asks for a library that may not be available, say that OneCompiler may only support standard libraries or preinstalled packages and suggest a fallback when possible.",
             },
           ],
         },
