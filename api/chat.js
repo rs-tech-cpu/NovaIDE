@@ -17,6 +17,20 @@ function extractResponseText(data) {
     .trim();
 }
 
+function normalizeHistory(history) {
+  if (!Array.isArray(history)) {
+    return [];
+  }
+
+  return history
+    .map((entry) => ({
+      role: entry?.role === "assistant" ? "model" : "user",
+      text: String(entry?.content || "").trim(),
+    }))
+    .filter((entry) => entry.text)
+    .slice(-10);
+}
+
 export default async function handler(request, response) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
@@ -31,7 +45,7 @@ export default async function handler(request, response) {
     return;
   }
 
-  const { model = "gemini-2.5-flash-lite", prompt = "", workspaceContext = "" } = request.body || {};
+  const { model = "gemini-2.5-flash-lite", prompt = "", workspaceContext = "", history = [] } = request.body || {};
 
   if (!String(prompt).trim()) {
     response.status(400).json({ error: "Prompt is required." });
@@ -39,6 +53,25 @@ export default async function handler(request, response) {
   }
 
   try {
+    const contents = [
+      ...normalizeHistory(history).map((entry) => ({
+        role: entry.role,
+        parts: [
+          {
+            text: entry.text,
+          },
+        ],
+      })),
+      {
+        role: "user",
+        parts: [
+          {
+            text: `${workspaceContext}\n\nUser request:\n${prompt}`,
+          },
+        ],
+      },
+    ];
+
     const upstreamResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(normalizeModel(model))}:generateContent`,
       {
@@ -51,20 +84,11 @@ export default async function handler(request, response) {
         system_instruction: {
           parts: [
             {
-              text: "You are a helpful coding assistant inside a browser IDE. Use the provided workspace context to answer clearly, concretely, and practically. Whenever you provide code, wrap it in triple backticks and include the language tag when possible. If the user asks for a simple code snippet such as a hello world example, prefer returning only the fenced code block unless extra explanation is explicitly needed.",
+              text: "You are a helpful coding assistant inside a browser IDE. Use the provided workspace context and recent conversation history to answer clearly, concretely, and practically. Keep follow-up answers grounded in the earlier turns of the same chat. Whenever you provide code, wrap it in triple backticks and include the language tag when possible. If the user asks for a simple code snippet such as a hello world example, prefer returning only the fenced code block unless extra explanation is explicitly needed. This IDE runs supported code through OneCompiler, so do not suggest pip install, package manager installation steps, or dependency setup commands as if they can be executed here. If a user asks for a library that may not be available, say that OneCompiler may only support standard libraries or preinstalled packages and suggest a fallback when possible.",
             },
           ],
         },
-        contents: [
-          {
-            role: "user",
-            parts: [
-              {
-                text: `${workspaceContext}\n\nUser request:\n${prompt}`,
-              },
-            ],
-          },
-        ],
+        contents,
         generationConfig: {
           maxOutputTokens: 700,
         },
