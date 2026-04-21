@@ -298,6 +298,7 @@ let shellBackend = {
   available: false,
   baseUrl: "",
 };
+const EDITOR_INDENT = "  ";
 const scriptLoaders = {};
 let authInstance = null;
 
@@ -1439,6 +1440,135 @@ function getEditorCaretPosition() {
   stage.removeChild(mirror);
 
   return { left, top: top + height };
+}
+
+function setEditorValue(nextValue, selectionStart, selectionEnd = selectionStart) {
+  elements.editorInput.value = nextValue;
+  elements.editorInput.selectionStart = selectionStart;
+  elements.editorInput.selectionEnd = selectionEnd;
+  elements.editorInput.dispatchEvent(new Event("input"));
+}
+
+function getCurrentLineBeforeCursor(value, cursor) {
+  const lineStart = value.lastIndexOf("\n", Math.max(0, cursor - 1)) + 1;
+  return value.slice(lineStart, cursor);
+}
+
+function getLineIndentation(line) {
+  return (line.match(/^\s*/) || [""])[0];
+}
+
+function shouldIncreaseIndent(language, lineBeforeCursor) {
+  const trimmed = lineBeforeCursor.trimEnd();
+
+  if (!trimmed) {
+    return false;
+  }
+
+  if (language === "python") {
+    return trimmed.endsWith(":");
+  }
+
+  if (["javascript", "csharp", "java", "cpp", "swift"].includes(language)) {
+    return /[\{\[\(]$/.test(trimmed);
+  }
+
+  return false;
+}
+
+function handleEditorPairInsertion(event) {
+  const pairs = {
+    "(": ")",
+    "[": "]",
+    "{": "}",
+    "\"": "\"",
+    "'": "'",
+  };
+  const closingChars = new Set(Object.values(pairs));
+  const opener = event.key;
+  const closer = pairs[opener];
+
+  if (!closer || event.ctrlKey || event.metaKey || event.altKey) {
+    return false;
+  }
+
+  const textarea = elements.editorInput;
+  const value = textarea.value;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selectedText = value.slice(start, end);
+  const nextChar = value[end] || "";
+  const prevChar = value[start - 1] || "";
+  const isQuote = opener === "\"" || opener === "'";
+
+  if (isQuote && /[A-Za-z0-9_]/.test(prevChar)) {
+    return false;
+  }
+
+  event.preventDefault();
+
+  if (selectedText) {
+    setEditorValue(
+      `${value.slice(0, start)}${opener}${selectedText}${closer}${value.slice(end)}`,
+      start + 1,
+      end + 1
+    );
+    return true;
+  }
+
+  if (isQuote && nextChar === closer) {
+    setEditorValue(value, start + 1);
+    return true;
+  }
+
+  if (!isQuote && closingChars.has(nextChar) && nextChar === closer) {
+    setEditorValue(value, start + 1);
+    return true;
+  }
+
+  setEditorValue(
+    `${value.slice(0, start)}${opener}${closer}${value.slice(end)}`,
+    start + 1
+  );
+  return true;
+}
+
+function handleEditorNewline(event, language) {
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return false;
+  }
+
+  const textarea = elements.editorInput;
+  const value = textarea.value;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const lineBeforeCursor = getCurrentLineBeforeCursor(value, start);
+  const baseIndent = getLineIndentation(lineBeforeCursor);
+  const shouldIndentMore = shouldIncreaseIndent(language, lineBeforeCursor);
+  const nextChar = value[end] || "";
+  const innerIndent = `${baseIndent}${shouldIndentMore ? EDITOR_INDENT : ""}`;
+  const shouldCreateClosingLine = ["}", "]", ")"].includes(nextChar)
+    && ["javascript", "csharp", "java", "cpp", "swift"].includes(language);
+
+  event.preventDefault();
+
+  if (shouldCreateClosingLine) {
+    const insertion = `\n${innerIndent}\n${baseIndent}`;
+    const cursorPosition = start + 1 + innerIndent.length;
+    setEditorValue(
+      `${value.slice(0, start)}${insertion}${value.slice(end)}`,
+      cursorPosition
+    );
+    return true;
+  }
+
+  const insertion = `\n${innerIndent}`;
+  const cursorPosition = start + insertion.length;
+  setEditorValue(
+    `${value.slice(0, start)}${insertion}${value.slice(end)}`,
+    cursorPosition
+  );
+  return true;
 }
 
 function renderEditorSuggestions() {
@@ -3215,6 +3345,8 @@ elements.editorInput.addEventListener("scroll", () => {
 });
 
 elements.editorInput.addEventListener("keydown", (event) => {
+  const file = getActiveFile();
+
   if (suggestionState.items.length) {
     if (event.key === "ArrowDown") {
       event.preventDefault();
@@ -3243,16 +3375,29 @@ elements.editorInput.addEventListener("keydown", (event) => {
     }
   }
 
+  if (["(", "\"", "{", "[", "'"].includes(event.key)) {
+    if (handleEditorPairInsertion(event)) {
+      return;
+    }
+  }
+
+  if (event.key === "Enter" && file) {
+    if (handleEditorNewline(event, file.language)) {
+      return;
+    }
+  }
+
   if (event.key === "Tab") {
     event.preventDefault();
     const start = elements.editorInput.selectionStart;
     const end = elements.editorInput.selectionEnd;
     const value = elements.editorInput.value;
-    const insertion = "  ";
+    const insertion = EDITOR_INDENT;
 
-    elements.editorInput.value = `${value.slice(0, start)}${insertion}${value.slice(end)}`;
-    elements.editorInput.selectionStart = elements.editorInput.selectionEnd = start + insertion.length;
-    elements.editorInput.dispatchEvent(new Event("input"));
+    setEditorValue(
+      `${value.slice(0, start)}${insertion}${value.slice(end)}`,
+      start + insertion.length
+    );
   }
 });
 
