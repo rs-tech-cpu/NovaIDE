@@ -203,12 +203,6 @@ async function monitorAuthenticatedUser() {
         return;
       }
 
-      const normalizedEmail = String(user.email || "").trim().toLowerCase();
-      if (window.sessionStorage.getItem(APPROVED_ACCESS_KEY) === normalizedEmail) {
-        window.location.href = "index.html";
-        return;
-      }
-
       closeAuthModal();
       homeShell.classList.add("is-access-blocked");
       earlyAccessGate.hidden = false;
@@ -222,7 +216,7 @@ async function monitorAuthenticatedUser() {
         }
 
         if (result.approved) {
-          rememberApprovedAccess(normalizedEmail);
+          rememberApprovedAccess(String(user.email || "").trim().toLowerCase());
           window.location.href = "index.html";
           return;
         }

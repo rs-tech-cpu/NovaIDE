@@ -3513,19 +3513,6 @@ ensureFirebaseAuth()
       }
 
       const normalizedEmail = String(user.email || "").trim().toLowerCase();
-      const rememberedEmail = window.sessionStorage.getItem(APPROVED_ACCESS_KEY);
-
-      if (rememberedEmail === normalizedEmail) {
-        try {
-          await syncWorkspaceFromCloud(user);
-        } catch (error) {
-          cloudSyncReady = false;
-          pushLog("Cloud sync is unavailable right now. Using this device's saved workspace.", "warn");
-        }
-        renderAll();
-        checkShellBackend();
-        return;
-      }
 
       try {
         const result = await fetchEarlyAccessStatus(normalizedEmail);
