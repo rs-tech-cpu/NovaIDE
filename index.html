@@ -116,6 +116,7 @@
           <div class="editor-tabs" role="tablist" aria-label="Open files" data-editor-tabs></div>
           <div class="editor-actions">
             <button class="pill pill--button pill--run" type="button" data-run-active-file>Run Active File</button>
+            <span class="editor-run-count" data-run-count>0/5</span>
             <button class="pill pill--button" type="button" data-save-workspace>Save Snapshot</button>
             <button class="pill pill--button pill--accent" type="button" data-download-file>Download File</button>
           </div>
@@ -309,6 +310,25 @@
         <button class="pill pill--button pill--accent" type="submit">Create File</button>
       </div>
     </form>
+  </div>
+
+  <div class="modal" data-run-limit-modal hidden>
+    <div class="modal__backdrop" data-close-run-limit></div>
+    <div class="modal__card glass modal__card--notice">
+      <div class="modal__header">
+        <div>
+          <p class="eyebrow">Run Limit Reached</p>
+          <h3>Nova script execution is no longer available.</h3>
+        </div>
+        <button class="icon-button icon-button--ghost" type="button" aria-label="Close run limit dialog" data-close-run-limit>x</button>
+      </div>
+      <p class="modal__copy">
+        You have used all 5 script runs for this account right now. You can still keep using the editor and Gemini assistant normally.
+      </p>
+      <div class="modal__actions">
+        <button class="pill pill--button pill--accent" type="button" data-close-run-limit>Continue Editing</button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>

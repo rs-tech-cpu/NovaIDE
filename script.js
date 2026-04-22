@@ -2,6 +2,7 @@ const STORAGE_KEY = "novaide-workspace-v2";
 const WORKSPACE_VERSION = 4;
 const DEFAULT_BACKEND_PORT = 8765;
 const APPROVED_ACCESS_KEY = "novaide-approved-email";
+const SCRIPT_RUN_LIMIT = 5;
 const SUPPORTED_CHAT_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash"];
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAUbyQlVd8ElTbez7TAddtqc_fPXIQARPE",
@@ -56,12 +57,14 @@ const elements = {
   debugLog: document.querySelector("[data-debug-log]"),
   fileInput: document.querySelector("[data-file-input]"),
   modal: document.querySelector("[data-modal]"),
+  runLimitModal: document.querySelector("[data-run-limit-modal]"),
   createForm: document.querySelector("[data-create-form]"),
   newFilePath: document.querySelector("[data-new-file-path]"),
   newFileTemplate: document.querySelector("[data-new-file-template]"),
   saveWorkspace: document.querySelector("[data-save-workspace]"),
   downloadFile: document.querySelector("[data-download-file]"),
   runActiveFile: document.querySelector("[data-run-active-file]"),
+  runCount: document.querySelector("[data-run-count]"),
   createFolder: document.querySelector("[data-create-folder]"),
   duplicateItem: document.querySelector("[data-duplicate-item]"),
   moveItem: document.querySelector("[data-move-item]"),
@@ -203,6 +206,7 @@ function createDefaultState() {
     openrouterModel: "gemini-2.5-flash-lite",
     previewWidth: 210,
     sidebarWidth: 330,
+    scriptRunCount: 0,
     collapsedFolders: [],
     logs: [
       createLogEntry("Workspace booted with a blank HTML, CSS, and JavaScript starter.", "info"),
@@ -271,6 +275,7 @@ function loadState() {
       openrouterModel: normalizeChatModel(parsed.openrouterModel),
       previewWidth: typeof parsed.previewWidth === "number" ? parsed.previewWidth : createDefaultState().previewWidth,
       sidebarWidth: typeof parsed.sidebarWidth === "number" ? parsed.sidebarWidth : createDefaultState().sidebarWidth,
+      scriptRunCount: typeof parsed.scriptRunCount === "number" ? parsed.scriptRunCount : 0,
       collapsedFolders: Array.isArray(parsed.collapsedFolders) ? parsed.collapsedFolders : [],
       logs: Array.isArray(parsed.logs) && parsed.logs.length
         ? parsed.logs.slice(0, 18)
@@ -507,6 +512,34 @@ function persistState() {
 
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(serializable));
   queueCloudWorkspaceSave();
+}
+
+function getRemainingScriptRuns() {
+  return Math.max(0, SCRIPT_RUN_LIMIT - (state.scriptRunCount || 0));
+}
+
+function hasScriptRunQuota() {
+  return getRemainingScriptRuns() > 0;
+}
+
+function consumeScriptRunQuota() {
+  state.scriptRunCount = Math.min(SCRIPT_RUN_LIMIT, (state.scriptRunCount || 0) + 1);
+}
+
+function getScriptRunLimitMessage() {
+  return `You have reached the ${SCRIPT_RUN_LIMIT}-run limit for Nova IDE script execution. The editor and AI assistant are still available.`;
+}
+
+function openRunLimitModal() {
+  if (elements.runLimitModal) {
+    elements.runLimitModal.hidden = false;
+  }
+}
+
+function closeRunLimitModal() {
+  if (elements.runLimitModal) {
+    elements.runLimitModal.hidden = true;
+  }
 }
 
 function clampPreviewWidth(width) {
@@ -1275,8 +1308,10 @@ function renderEditor() {
     elements.currentLanguage.textContent = "Text";
     elements.charCount.textContent = "0 chars";
     elements.runActiveFile.disabled = true;
+    elements.runActiveFile.hidden = false;
     elements.runActiveFile.textContent = "Run Active File";
     elements.runActiveFile.setAttribute("aria-label", "Run active file");
+    elements.runCount.textContent = `${Math.min(state.scriptRunCount || 0, SCRIPT_RUN_LIMIT)}/${SCRIPT_RUN_LIMIT}`;
     elements.debugFile.textContent = "No file selected";
     elements.debugLanguage.textContent = "Text";
     return;
@@ -1299,13 +1334,21 @@ function renderEditor() {
   elements.currentFile.textContent = getFileName(file.path);
   elements.currentLanguage.textContent = getLanguageLabel(file.language);
   elements.charCount.textContent = `${file.content.length} chars`;
-  elements.runActiveFile.disabled = !isOneCompilerRunnable(file.language);
-  elements.runActiveFile.textContent = isOneCompilerRunnable(file.language)
+  const canRunLanguage = isOneCompilerRunnable(file.language);
+  const hasRunQuota = hasScriptRunQuota();
+  elements.runCount.textContent = `${Math.min(state.scriptRunCount || 0, SCRIPT_RUN_LIMIT)}/${SCRIPT_RUN_LIMIT}`;
+  elements.runActiveFile.hidden = canRunLanguage && !hasRunQuota;
+  elements.runActiveFile.disabled = !canRunLanguage || !hasRunQuota;
+  elements.runActiveFile.textContent = canRunLanguage
     ? `Run ${getLanguageLabel(file.language)}`
     : "Run Active File";
   elements.runActiveFile.setAttribute(
     "aria-label",
-    isOneCompilerRunnable(file.language) ? `Run ${getLanguageLabel(file.language)}` : "Run active file"
+    canRunLanguage && hasRunQuota
+      ? `Run ${getLanguageLabel(file.language)}`
+      : canRunLanguage
+        ? getScriptRunLimitMessage()
+        : "Run active file"
   );
   elements.debugFile.textContent = file.path;
   elements.debugLanguage.textContent = getLanguageLabel(file.language);
@@ -2257,7 +2300,20 @@ async function runRemoteFileWithOneCompiler(filePath, expectedLanguage = "", std
     return;
   }
 
+  if (!hasScriptRunQuota()) {
+    pushTerminalLine(getScriptRunLimitMessage(), "accent");
+    openRunLimitModal();
+    return;
+  }
+
   pushTerminalLine(`Running ${file.path} on OneCompiler as ${runtime.label}...`, "muted");
+  consumeScriptRunQuota();
+  if (!hasScriptRunQuota()) {
+    pushTerminalLine(getScriptRunLimitMessage(), "warn");
+    openRunLimitModal();
+  }
+  persistState();
+  renderAll();
 
   try {
     const response = await fetch("/api/run-python", {
@@ -3445,6 +3501,12 @@ document.querySelectorAll("[data-close-modal]").forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-close-run-limit]").forEach((button) => {
+  button.addEventListener("click", () => {
+    closeRunLimitModal();
+  });
+});
+
 elements.createForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -3641,6 +3703,10 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !elements.modal.hidden) {
     elements.modal.hidden = true;
     elements.createForm.reset();
+  }
+
+  if (event.key === "Escape" && elements.runLimitModal && !elements.runLimitModal.hidden) {
+    closeRunLimitModal();
   }
 
   if (event.key === "Escape" && !elements.panelMenu.hidden) {

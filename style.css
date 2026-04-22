@@ -505,6 +505,21 @@ body.git-collapsed .sidebar-resizer {
   gap: 8px;
 }
 
+.editor-run-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 .icon-button {
   min-width: 34px;
   height: 34px;
@@ -1288,6 +1303,16 @@ body.terminal-collapsed .bottom-panel {
   width: min(480px, calc(100vw - 32px));
   border-radius: var(--radius-xl);
   padding: 24px;
+}
+
+.modal__card--notice {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.modal__copy {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.7;
 }
 
 .field {
