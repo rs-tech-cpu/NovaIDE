@@ -729,6 +729,8 @@ a {
   background: rgba(7, 9, 16, 0.72);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  opacity: 0;
+  transition: opacity 220ms ease;
 }
 
 .auth-card {
@@ -742,6 +744,18 @@ a {
   box-shadow: var(--shadow-lg);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
+  opacity: 0;
+  transform: translateY(18px) scale(0.98);
+  transition: opacity 260ms ease, transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.auth-modal.is-open .auth-modal__backdrop {
+  opacity: 1;
+}
+
+.auth-modal.is-open .auth-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .auth-card__header {

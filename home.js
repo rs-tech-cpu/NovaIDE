@@ -65,11 +65,15 @@ function resetAuthMessage() {
 
 function openAuthModal() {
   authModal.hidden = false;
+  window.requestAnimationFrame(() => {
+    authModal.classList.add("is-open");
+  });
   authEmail.focus();
   resetAuthMessage();
 }
 
 function closeAuthModal() {
+  authModal.classList.remove("is-open");
   authModal.hidden = true;
   authForm.reset();
   resetAuthMessage();
