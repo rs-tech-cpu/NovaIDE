@@ -71,6 +71,7 @@ const elements = {
   panelMenuToggle: document.querySelector("[data-panel-menu-toggle]"),
   panelMenu: document.querySelector("[data-panel-menu]"),
   panelMenuItems: document.querySelectorAll("[data-menu-toggle]"),
+  exportProject: document.querySelector("[data-export-project]"),
   signOut: document.querySelector("[data-sign-out]"),
   profileName: document.querySelector("[data-profile-name]"),
   profileEmail: document.querySelector("[data-profile-email]"),
@@ -3185,6 +3186,156 @@ function downloadActiveFile() {
   pushLog(`Downloaded ${file.path} to your computer.`, "info");
 }
 
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function sanitizeProjectName(name) {
+  return String(name || "nova-project")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "nova-project";
+}
+
+function getProjectExportBaseName() {
+  const workspaceName = document.querySelector("[data-workspace-name]")?.textContent || "nova-project";
+  return sanitizeProjectName(workspaceName);
+}
+
+function getZipTimestamp(date = new Date()) {
+  const year = Math.max(1980, date.getFullYear());
+  const dosTime = ((date.getHours() & 31) << 11)
+    | ((date.getMinutes() & 63) << 5)
+    | ((Math.floor(date.getSeconds() / 2)) & 31);
+  const dosDate = (((year - 1980) & 127) << 9)
+    | (((date.getMonth() + 1) & 15) << 5)
+    | (date.getDate() & 31);
+
+  return { dosTime, dosDate };
+}
+
+function makeCrcTable() {
+  const table = new Uint32Array(256);
+
+  for (let index = 0; index < 256; index += 1) {
+    let value = index;
+
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+    }
+
+    table[index] = value >>> 0;
+  }
+
+  return table;
+}
+
+const CRC_TABLE = makeCrcTable();
+
+function crc32(bytes) {
+  let crc = 0xffffffff;
+
+  for (let index = 0; index < bytes.length; index += 1) {
+    crc = CRC_TABLE[(crc ^ bytes[index]) & 0xff] ^ (crc >>> 8);
+  }
+
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function createZipArchive(entries) {
+  const encoder = new TextEncoder();
+  const fileParts = [];
+  const centralParts = [];
+  let offset = 0;
+  const timestamp = getZipTimestamp();
+
+  entries.forEach((entry) => {
+    const nameBytes = encoder.encode(entry.name);
+    const contentBytes = entry.directory ? new Uint8Array(0) : encoder.encode(entry.content);
+    const localHeader = new Uint8Array(30 + nameBytes.length);
+    const localView = new DataView(localHeader.buffer);
+    const crc = crc32(contentBytes);
+
+    localView.setUint32(0, 0x04034b50, true);
+    localView.setUint16(4, 20, true);
+    localView.setUint16(6, 0, true);
+    localView.setUint16(8, 0, true);
+    localView.setUint16(10, timestamp.dosTime, true);
+    localView.setUint16(12, timestamp.dosDate, true);
+    localView.setUint32(14, crc, true);
+    localView.setUint32(18, contentBytes.length, true);
+    localView.setUint32(22, contentBytes.length, true);
+    localView.setUint16(26, nameBytes.length, true);
+    localView.setUint16(28, 0, true);
+    localHeader.set(nameBytes, 30);
+
+    fileParts.push(localHeader, contentBytes);
+
+    const centralHeader = new Uint8Array(46 + nameBytes.length);
+    const centralView = new DataView(centralHeader.buffer);
+    centralView.setUint32(0, 0x02014b50, true);
+    centralView.setUint16(4, 20, true);
+    centralView.setUint16(6, 20, true);
+    centralView.setUint16(8, 0, true);
+    centralView.setUint16(10, 0, true);
+    centralView.setUint16(12, timestamp.dosTime, true);
+    centralView.setUint16(14, timestamp.dosDate, true);
+    centralView.setUint32(16, crc, true);
+    centralView.setUint32(20, contentBytes.length, true);
+    centralView.setUint32(24, contentBytes.length, true);
+    centralView.setUint16(28, nameBytes.length, true);
+    centralView.setUint16(30, 0, true);
+    centralView.setUint16(32, 0, true);
+    centralView.setUint16(34, 0, true);
+    centralView.setUint16(36, 0, true);
+    centralView.setUint32(38, entry.directory ? 0x10 : 0, true);
+    centralView.setUint32(42, offset, true);
+    centralHeader.set(nameBytes, 46);
+    centralParts.push(centralHeader);
+
+    offset += localHeader.length + contentBytes.length;
+  });
+
+  const centralSize = centralParts.reduce((total, part) => total + part.length, 0);
+  const endRecord = new Uint8Array(22);
+  const endView = new DataView(endRecord.buffer);
+  endView.setUint32(0, 0x06054b50, true);
+  endView.setUint16(4, 0, true);
+  endView.setUint16(6, 0, true);
+  endView.setUint16(8, entries.length, true);
+  endView.setUint16(10, entries.length, true);
+  endView.setUint32(12, centralSize, true);
+  endView.setUint32(16, offset, true);
+  endView.setUint16(20, 0, true);
+
+  return new Blob([...fileParts, ...centralParts, endRecord], { type: "application/zip" });
+}
+
+function downloadProjectArchive() {
+  const baseName = getProjectExportBaseName();
+  const folderEntries = state.folders
+    .map((folder) => ({
+      name: `${baseName}/${folder.replace(/\/+$/, "")}/`,
+      content: "",
+      directory: true,
+    }));
+  const fileEntries = state.files.map((file) => ({
+    name: `${baseName}/${file.path}`,
+    content: file.content,
+    directory: false,
+  }));
+  const zipBlob = createZipArchive([...folderEntries, ...fileEntries]);
+
+  downloadBlob(zipBlob, `${baseName}.zip`);
+  pushLog(`Exported ${state.files.length} files as ${baseName}.zip.`, "info");
+}
+
 function renderAll() {
   state.files = ensureWorkspaceUpgradeFiles(state.files, state.workspaceVersion || WORKSPACE_VERSION);
   state.folders = [...new Set([...collectFoldersFromFiles(state.files), ...state.folders])].sort((left, right) => left.localeCompare(right));
@@ -3761,6 +3912,11 @@ elements.runActiveFile.addEventListener("click", () => {
 });
 elements.saveWorkspace.addEventListener("click", saveSnapshot);
 elements.downloadFile.addEventListener("click", downloadActiveFile);
+elements.exportProject.addEventListener("click", () => {
+  downloadProjectArchive();
+  elements.panelMenu.hidden = true;
+  elements.panelMenuToggle.setAttribute("aria-expanded", "false");
+});
 elements.signOut.addEventListener("click", async () => {
   clearApprovedAccess();
   cloudSyncReady = false;
