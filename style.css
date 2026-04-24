@@ -662,6 +662,15 @@ body.git-collapsed .sidebar-resizer {
   background: rgba(255, 255, 255, 0.05);
 }
 
+.tree-folder.is-drop-target {
+  background: linear-gradient(135deg, rgba(139, 233, 253, 0.14), rgba(189, 147, 249, 0.1));
+  outline: 1px solid rgba(139, 233, 253, 0.3);
+}
+
+.tree-file.is-dragging {
+  opacity: 0.5;
+}
+
 .tree-folder__arrow {
   color: var(--accent-cyan);
   transition: transform 180ms ease;

@@ -67,7 +67,6 @@ const elements = {
   runCount: document.querySelector("[data-run-count]"),
   createFolder: document.querySelector("[data-create-folder]"),
   duplicateItem: document.querySelector("[data-duplicate-item]"),
-  moveItem: document.querySelector("[data-move-item]"),
   deleteItem: document.querySelector("[data-delete-item]"),
   panelMenuToggle: document.querySelector("[data-panel-menu-toggle]"),
   panelMenu: document.querySelector("[data-panel-menu]"),
@@ -294,6 +293,7 @@ let terminalPendingAction = null;
 let cloudSaveTimer = null;
 let firestoreInstance = null;
 let cloudSyncReady = false;
+let draggedTreeFilePath = "";
 let suggestionState = {
   items: [],
   activeIndex: 0,
@@ -1227,7 +1227,7 @@ function renderTreeNode(node, parentPath = "") {
   }).join("");
 
   const fileMarkup = fileEntries.map((file) => `
-    <button class="tree-file ${file.path === state.activeFilePath ? "tree-file--active" : ""} ${selectedItem.type === "file" && selectedItem.path === file.path ? "is-selected" : ""}" type="button" data-file-path="${file.path}">
+    <button class="tree-file ${file.path === state.activeFilePath ? "tree-file--active" : ""} ${selectedItem.type === "file" && selectedItem.path === file.path ? "is-selected" : ""}" type="button" data-file-path="${file.path}" draggable="true">
       <span class="tree-file__icon ${getFileIconClass(file.language)}"></span>
       <span>${getFileName(file.path)}</span>
     </button>
@@ -1274,7 +1274,6 @@ function renderSummary() {
   elements.selectionLabel.innerHTML = `Selected: <strong>${selectedPath}</strong>`;
   elements.duplicateItem.disabled = selectedItem.type !== "file" || !selectedItem.path;
   elements.deleteItem.disabled = !selectedItem.path;
-  elements.moveItem.disabled = !selectedItem.path;
 }
 
 function renderTabs() {
@@ -3014,6 +3013,48 @@ function duplicateSelectedFile() {
   renderAll();
 }
 
+function moveFileIntoFolder(sourcePath, destinationFolderPath) {
+  const file = state.files.find((item) => item.path === sourcePath);
+
+  if (!file) {
+    return false;
+  }
+
+  const normalizedDestinationFolder = normalizePath(destinationFolderPath || "").replace(/\/+$/, "");
+  const currentFolder = getFolderPath(file.path) === "workspace" ? "" : getFolderPath(file.path);
+
+  if (normalizedDestinationFolder === currentFolder) {
+    return false;
+  }
+
+  const nextPath = [normalizedDestinationFolder, getFileName(file.path)].filter(Boolean).join("/");
+
+  if (!nextPath || nextPath === sourcePath) {
+    return false;
+  }
+
+  if (state.files.some((item) => item.path === nextPath && item.path !== sourcePath)) {
+    pushLog(`Cannot move ${sourcePath} because ${nextPath} already exists.`, "warn");
+    return false;
+  }
+
+  ensureFolderPath(normalizedDestinationFolder);
+  file.path = nextPath;
+  file.language = inferLanguage(nextPath);
+  state.openTabs = state.openTabs.map((path) => path === sourcePath ? nextPath : path);
+
+  if (state.activeFilePath === sourcePath) {
+    state.activeFilePath = nextPath;
+  }
+
+  setSelectedItem("file", nextPath);
+  state.folders = [...new Set([...collectFoldersFromFiles(state.files), ...state.folders])].sort((left, right) => left.localeCompare(right));
+  persistState();
+  pushLog(`Moved ${sourcePath} to ${normalizedDestinationFolder || "workspace"}.`, "info");
+  renderAll();
+  return true;
+}
+
 function moveSelectedItem() {
   const selectedItem = getSelectedItem();
   const currentPath = selectedItem.path;
@@ -3075,6 +3116,12 @@ function moveSelectedItem() {
   persistState();
   pushLog(`Moved ${currentPath} to ${normalizedNextPath}.`, "info");
   renderAll();
+}
+
+function clearTreeDropTargets() {
+  elements.tree.querySelectorAll(".tree-folder.is-drop-target").forEach((node) => {
+    node.classList.remove("is-drop-target");
+  });
 }
 
 function deleteSelectedItem() {
@@ -3328,6 +3375,80 @@ elements.tree.addEventListener("click", (event) => {
   }
 });
 
+elements.tree.addEventListener("dragstart", (event) => {
+  const fileButton = event.target.closest("[data-file-path]");
+
+  if (!fileButton) {
+    return;
+  }
+
+  draggedTreeFilePath = fileButton.dataset.filePath || "";
+  fileButton.classList.add("is-dragging");
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", draggedTreeFilePath);
+  }
+});
+
+elements.tree.addEventListener("dragend", (event) => {
+  const fileButton = event.target.closest("[data-file-path]");
+
+  if (fileButton) {
+    fileButton.classList.remove("is-dragging");
+  }
+
+  draggedTreeFilePath = "";
+  clearTreeDropTargets();
+});
+
+elements.tree.addEventListener("dragover", (event) => {
+  const folderButton = event.target.closest("[data-folder-path]");
+
+  clearTreeDropTargets();
+
+  if (!folderButton || !draggedTreeFilePath) {
+    return;
+  }
+
+  const draggedFile = state.files.find((item) => item.path === draggedTreeFilePath);
+  const destinationFolder = folderButton.dataset.folderPath || "";
+  const currentFolder = draggedFile ? (getFolderPath(draggedFile.path) === "workspace" ? "" : getFolderPath(draggedFile.path)) : "";
+
+  if (destinationFolder === currentFolder) {
+    return;
+  }
+
+  event.preventDefault();
+  folderButton.classList.add("is-drop-target");
+  if (event.dataTransfer) {
+    event.dataTransfer.dropEffect = "move";
+  }
+});
+
+elements.tree.addEventListener("dragleave", (event) => {
+  const relatedTarget = event.relatedTarget;
+
+  if (relatedTarget && elements.tree.contains(relatedTarget)) {
+    return;
+  }
+
+  clearTreeDropTargets();
+});
+
+elements.tree.addEventListener("drop", (event) => {
+  const folderButton = event.target.closest("[data-folder-path]");
+
+  if (!folderButton || !draggedTreeFilePath) {
+    return;
+  }
+
+  event.preventDefault();
+  const sourcePath = draggedTreeFilePath;
+  draggedTreeFilePath = "";
+  clearTreeDropTargets();
+  moveFileIntoFolder(sourcePath, folderButton.dataset.folderPath || "");
+});
+
 elements.tabs.addEventListener("click", (event) => {
   const tabButton = event.target.closest("[data-tab-path]");
   if (tabButton) {
@@ -3552,7 +3673,6 @@ elements.createFolder.addEventListener("click", () => {
 });
 
 elements.duplicateItem.addEventListener("click", duplicateSelectedFile);
-elements.moveItem.addEventListener("click", moveSelectedItem);
 elements.deleteItem.addEventListener("click", deleteSelectedItem);
 elements.chatModel.addEventListener("change", (event) => {
   state.openrouterModel = normalizeChatModel(event.target.value);
