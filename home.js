@@ -20,6 +20,7 @@ const googleLoginButton = document.querySelector("[data-google-login]");
 const earlyAccessGate = document.querySelector("[data-early-access-gate]");
 const earlyAccessMessage = document.querySelector("[data-early-access-message]");
 const earlyAccessSignOut = document.querySelector("[data-early-access-signout]");
+const scrollRiseItems = document.querySelectorAll("[data-scroll-rise]");
 const APPROVED_ACCESS_KEY = "novaide-approved-email";
 
 const scriptLoaders = {};
@@ -29,6 +30,26 @@ let accessRequestToken = 0;
 if (homeShell) {
   window.requestAnimationFrame(() => {
     homeShell.classList.add("home-shell--entered");
+  });
+}
+
+if (scrollRiseItems.length) {
+  const revealObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) {
+        return;
+      }
+
+      entry.target.classList.add("is-visible");
+      observer.unobserve(entry.target);
+    });
+  }, {
+    threshold: 0.2,
+    rootMargin: "0px 0px -8% 0px",
+  });
+
+  scrollRiseItems.forEach((item) => {
+    revealObserver.observe(item);
   });
 }
 
