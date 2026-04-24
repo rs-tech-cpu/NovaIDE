@@ -76,6 +76,12 @@ a {
   display: none;
 }
 
+.home-shell.is-access-blocked .home-stats,
+.home-shell.is-access-blocked .home-ai-band,
+.home-shell.is-access-blocked .home-detail-grid {
+  display: none;
+}
+
 .home-nav {
   display: flex;
   align-items: center;
