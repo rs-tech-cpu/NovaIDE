@@ -1326,6 +1326,10 @@ body.terminal-collapsed .bottom-panel {
   -ms-overflow-style: none;
 }
 
+.modal__card--github {
+  width: min(560px, calc(100vw - 32px));
+}
+
 .modal__card--extensions::-webkit-scrollbar {
   width: 0;
   height: 0;
@@ -1335,6 +1339,30 @@ body.terminal-collapsed .bottom-panel {
   margin: 0;
   color: var(--text-secondary);
   line-height: 1.7;
+}
+
+.modal__copy--status {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.modal__copy--status[data-tone="info"] {
+  color: var(--text-primary);
+}
+
+.modal__copy--status[data-tone="warn"] {
+  color: #ffd98b;
+  border-color: rgba(255, 217, 139, 0.25);
+  background: rgba(255, 217, 139, 0.08);
+}
+
+.modal__copy--status[data-tone="error"] {
+  color: #ffb3d0;
+  border-color: rgba(255, 121, 198, 0.22);
+  background: rgba(255, 121, 198, 0.08);
 }
 
 .extensions-grid {
@@ -1380,6 +1408,16 @@ body.terminal-collapsed .bottom-panel {
   margin: 0;
   color: var(--text-secondary);
   line-height: 1.7;
+}
+
+.extension-card__actions {
+  margin-top: 18px;
+  display: flex;
+}
+
+.extension-card__actions .pill {
+  width: 100%;
+  justify-content: center;
 }
 
 .field {

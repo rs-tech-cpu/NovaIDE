@@ -61,9 +61,15 @@ const elements = {
   runLimitModal: document.querySelector("[data-run-limit-modal]"),
   renameModal: document.querySelector("[data-rename-modal]"),
   extensionsModal: document.querySelector("[data-extensions-modal]"),
+  githubModal: document.querySelector("[data-github-modal]"),
   createForm: document.querySelector("[data-create-form]"),
   renameForm: document.querySelector("[data-rename-form]"),
+  githubForm: document.querySelector("[data-github-form]"),
   renameInput: document.querySelector("[data-rename-input]"),
+  githubRepoInput: document.querySelector("[data-github-repo-input]"),
+  githubRefInput: document.querySelector("[data-github-ref-input]"),
+  githubFolderInput: document.querySelector("[data-github-folder-input]"),
+  githubStatus: document.querySelector("[data-github-status]"),
   newFilePath: document.querySelector("[data-new-file-path]"),
   newFileTemplate: document.querySelector("[data-new-file-template]"),
   saveWorkspace: document.querySelector("[data-save-workspace]"),
@@ -79,6 +85,8 @@ const elements = {
   exportProject: document.querySelector("[data-export-project]"),
   renameProject: document.querySelector("[data-rename-project]"),
   openExtensions: document.querySelector("[data-open-extensions]"),
+  openGitHubImport: document.querySelector("[data-open-github-import]"),
+  githubSubmit: document.querySelector("[data-github-submit]"),
   signOut: document.querySelector("[data-sign-out]"),
   profileName: document.querySelector("[data-profile-name]"),
   profileEmail: document.querySelector("[data-profile-email]"),
@@ -3145,6 +3153,27 @@ function closeExtensionsModal() {
   elements.extensionsModal.hidden = true;
 }
 
+function closeGitHubModal() {
+  if (!elements.githubModal || !elements.githubForm) {
+    return;
+  }
+
+  elements.githubModal.hidden = true;
+  elements.githubForm.reset();
+  setGitHubStatus("");
+}
+
+function setGitHubStatus(message, tone = "info") {
+  if (!elements.githubStatus) {
+    return;
+  }
+
+  const normalizedMessage = String(message || "").trim();
+  elements.githubStatus.hidden = !normalizedMessage;
+  elements.githubStatus.textContent = normalizedMessage;
+  elements.githubStatus.dataset.tone = normalizedMessage ? tone : "";
+}
+
 function deleteSelectedItem() {
   const selectedItem = getSelectedItem();
   if (!selectedItem.path) {
@@ -3186,6 +3215,26 @@ function saveSnapshot() {
   renderSummary();
   renderTabs();
   renderDebugPanel();
+}
+
+function addOrReplaceImportedFile(path, content, source = "imported", tracked = false) {
+  const normalizedPath = normalizePath(path);
+
+  if (!normalizedPath) {
+    return;
+  }
+
+  ensureFolderPath(getFolderPath(normalizedPath) === "workspace" ? "" : getFolderPath(normalizedPath));
+  const existingIndex = state.files.findIndex((file) => file.path === normalizedPath);
+  const nextRecord = createFileRecord({ path: normalizedPath, content, source, tracked });
+
+  if (existingIndex >= 0) {
+    nextRecord.originalContent = content;
+    state.files[existingIndex] = nextRecord;
+    return;
+  }
+
+  state.files.push(nextRecord);
 }
 
 function downloadActiveFile() {
@@ -3505,6 +3554,116 @@ async function importFiles(fileList) {
   }
 }
 
+function suggestGitHubDestination(repositoryName) {
+  const baseName = sanitizeProjectName(repositoryName || "github-project");
+  let candidate = baseName || "github-project";
+  let suffix = 2;
+
+  while (
+    state.folders.includes(candidate)
+    || state.files.some((file) => file.path === candidate || file.path.startsWith(`${candidate}/`))
+  ) {
+    candidate = `${baseName}-${suffix}`;
+    suffix += 1;
+  }
+
+  return candidate;
+}
+
+function importGitHubFilesIntoWorkspace(files, destinationFolder) {
+  const normalizedDestination = normalizePath(destinationFolder || "").replace(/\/+$/, "");
+  const initialActivePath = state.activeFilePath;
+  const initialSelectedItem = getSelectedItem();
+  const importedPaths = [];
+
+  if (normalizedDestination) {
+    ensureFolderPath(normalizedDestination);
+  }
+
+  files.forEach((file) => {
+    const nextPath = [normalizedDestination, normalizePath(file.path)].filter(Boolean).join("/");
+    addOrReplaceImportedFile(nextPath, String(file.content || ""), "imported", false);
+    importedPaths.push(nextPath);
+  });
+
+  state.folders = [...new Set([...collectFoldersFromFiles(state.files), ...state.folders])].sort((left, right) => left.localeCompare(right));
+
+  if (importedPaths.length) {
+    state.activeFilePath = importedPaths[0];
+    if (!state.openTabs.includes(importedPaths[0])) {
+      state.openTabs.push(importedPaths[0]);
+    }
+    setSelectedItem("file", importedPaths[0]);
+  } else if (initialActivePath) {
+    state.activeFilePath = initialActivePath;
+    setSelectedItem(initialSelectedItem.type, initialSelectedItem.path);
+  }
+
+  persistState();
+  renderAll();
+}
+
+async function importGitHubRepository(event) {
+  event.preventDefault();
+
+  const repository = String(elements.githubRepoInput?.value || "").trim();
+  const ref = String(elements.githubRefInput?.value || "").trim();
+
+  if (!repository) {
+    setGitHubStatus("Enter a GitHub repository to import first.", "warn");
+    elements.githubRepoInput?.focus();
+    return;
+  }
+
+  setGitHubStatus("Importing repository files from GitHub...", "info");
+
+  if (elements.githubSubmit) {
+    elements.githubSubmit.disabled = true;
+  }
+
+  try {
+    const response = await fetch("/api/github-import", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        repository,
+        ref,
+      }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `GitHub import failed with ${response.status}.`);
+    }
+
+    const destinationInput = String(elements.githubFolderInput?.value || "").trim();
+    const destinationFolder = destinationInput || suggestGitHubDestination(data.repoName || "github-project");
+
+    if (elements.githubFolderInput && !destinationInput) {
+      elements.githubFolderInput.value = destinationFolder;
+    }
+
+    importGitHubFilesIntoWorkspace(Array.isArray(data.files) ? data.files : [], destinationFolder);
+
+    const stats = data.stats || {};
+    const skippedTotal = Number(stats.skippedOversized || 0) + Number(stats.skippedBinary || 0) + Number(stats.skippedFailed || 0) + Number(stats.truncated || 0);
+    pushLog(
+      `Imported ${Number(stats.imported || 0)} file${Number(stats.imported || 0) === 1 ? "" : "s"} from ${data.repository}@${data.ref} into ${destinationFolder}.${skippedTotal ? ` Skipped ${skippedTotal} file${skippedTotal === 1 ? "" : "s"}.` : ""}`,
+      "info"
+    );
+
+    closeGitHubModal();
+  } catch (error) {
+    setGitHubStatus(error instanceof Error ? error.message : "GitHub import failed.", "error");
+  } finally {
+    if (elements.githubSubmit) {
+      elements.githubSubmit.disabled = false;
+    }
+  }
+}
+
 function handlePreviewMessages(event) {
   const data = event.data;
 
@@ -3805,6 +3964,12 @@ document.querySelectorAll("[data-close-extensions]").forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-close-github-modal]").forEach((button) => {
+  button.addEventListener("click", () => {
+    closeGitHubModal();
+  });
+});
+
 document.querySelectorAll("[data-close-run-limit]").forEach((button) => {
   button.addEventListener("click", () => {
     closeRunLimitModal();
@@ -3849,6 +4014,8 @@ elements.renameForm.addEventListener("submit", (event) => {
   pushLog(`Renamed workspace to ${nextName}.`, "info");
   renderAll();
 });
+
+elements.githubForm?.addEventListener("submit", importGitHubRepository);
 
 elements.createFolder.addEventListener("click", () => {
   const selectedItem = getSelectedItem();
@@ -3977,6 +4144,16 @@ elements.openExtensions.addEventListener("click", () => {
   elements.panelMenu.hidden = true;
   elements.panelMenuToggle.setAttribute("aria-expanded", "false");
 });
+elements.openGitHubImport?.addEventListener("click", () => {
+  closeExtensionsModal();
+  setGitHubStatus("");
+  if (elements.githubModal) {
+    elements.githubModal.hidden = false;
+  }
+  if (elements.githubRepoInput) {
+    elements.githubRepoInput.focus();
+  }
+});
 elements.signOut.addEventListener("click", async () => {
   clearApprovedAccess();
   cloudSyncReady = false;
@@ -4047,6 +4224,10 @@ window.addEventListener("keydown", (event) => {
 
   if (event.key === "Escape" && elements.extensionsModal && !elements.extensionsModal.hidden) {
     closeExtensionsModal();
+  }
+
+  if (event.key === "Escape" && elements.githubModal && !elements.githubModal.hidden) {
+    closeGitHubModal();
   }
 
   if (event.key === "Escape" && elements.runLimitModal && !elements.runLimitModal.hidden) {
