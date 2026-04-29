@@ -1320,6 +1320,15 @@ body.terminal-collapsed .bottom-panel {
 
 .modal__card--extensions {
   width: min(920px, calc(100vw - 32px));
+  max-height: min(76vh, 880px);
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal__card--extensions::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .modal__copy {
