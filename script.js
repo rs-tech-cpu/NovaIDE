@@ -16,6 +16,7 @@ const FIREBASE_CONFIG = {
 
 const elements = {
   fileSearch: document.querySelector("[data-file-search]"),
+  workspaceName: document.querySelector("[data-workspace-name]"),
   tree: document.querySelector("[data-tree]"),
   treeCaption: document.querySelector("[data-tree-caption]"),
   totalFiles: document.querySelector("[data-total-files]"),
@@ -58,7 +59,11 @@ const elements = {
   fileInput: document.querySelector("[data-file-input]"),
   modal: document.querySelector("[data-modal]"),
   runLimitModal: document.querySelector("[data-run-limit-modal]"),
+  renameModal: document.querySelector("[data-rename-modal]"),
+  extensionsModal: document.querySelector("[data-extensions-modal]"),
   createForm: document.querySelector("[data-create-form]"),
+  renameForm: document.querySelector("[data-rename-form]"),
+  renameInput: document.querySelector("[data-rename-input]"),
   newFilePath: document.querySelector("[data-new-file-path]"),
   newFileTemplate: document.querySelector("[data-new-file-template]"),
   saveWorkspace: document.querySelector("[data-save-workspace]"),
@@ -72,6 +77,8 @@ const elements = {
   panelMenu: document.querySelector("[data-panel-menu]"),
   panelMenuItems: document.querySelectorAll("[data-menu-toggle]"),
   exportProject: document.querySelector("[data-export-project]"),
+  renameProject: document.querySelector("[data-rename-project]"),
+  openExtensions: document.querySelector("[data-open-extensions]"),
   signOut: document.querySelector("[data-sign-out]"),
   profileName: document.querySelector("[data-profile-name]"),
   profileEmail: document.querySelector("[data-profile-email]"),
@@ -182,6 +189,7 @@ function createDefaultState() {
 
   return {
     workspaceVersion: WORKSPACE_VERSION,
+    workspaceName: "frontend-studio",
     files,
     folders,
     openTabs: files.map((file) => file.path),
@@ -249,6 +257,9 @@ function loadState() {
 
     return {
       workspaceVersion: WORKSPACE_VERSION,
+      workspaceName: typeof parsed.workspaceName === "string" && parsed.workspaceName.trim()
+        ? parsed.workspaceName.trim()
+        : "frontend-studio",
       files,
       folders: [...new Set([
         ...(Array.isArray(parsed.folders) ? parsed.folders : []),
@@ -3125,6 +3136,15 @@ function clearTreeDropTargets() {
   });
 }
 
+function closeRenameModal() {
+  elements.renameModal.hidden = true;
+  elements.renameForm.reset();
+}
+
+function closeExtensionsModal() {
+  elements.extensionsModal.hidden = true;
+}
+
 function deleteSelectedItem() {
   const selectedItem = getSelectedItem();
   if (!selectedItem.path) {
@@ -3204,8 +3224,7 @@ function sanitizeProjectName(name) {
 }
 
 function getProjectExportBaseName() {
-  const workspaceName = document.querySelector("[data-workspace-name]")?.textContent || "nova-project";
-  return sanitizeProjectName(workspaceName);
+  return sanitizeProjectName(state.workspaceName || "nova-project");
 }
 
 function getZipTimestamp(date = new Date()) {
@@ -3354,6 +3373,7 @@ function renderAll() {
   }
 
   elements.fileSearch.value = state.search;
+  elements.workspaceName.textContent = state.workspaceName || "frontend-studio";
   document.body.classList.toggle("explorer-collapsed", !state.explorerVisible);
   document.body.classList.toggle("git-collapsed", !state.gitVisible);
   document.body.classList.toggle("preview-collapsed", !state.previewVisible);
@@ -3773,6 +3793,18 @@ document.querySelectorAll("[data-close-modal]").forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-close-rename]").forEach((button) => {
+  button.addEventListener("click", () => {
+    closeRenameModal();
+  });
+});
+
+document.querySelectorAll("[data-close-extensions]").forEach((button) => {
+  button.addEventListener("click", () => {
+    closeExtensionsModal();
+  });
+});
+
 document.querySelectorAll("[data-close-run-limit]").forEach((button) => {
   button.addEventListener("click", () => {
     closeRunLimitModal();
@@ -3800,6 +3832,21 @@ elements.createForm.addEventListener("submit", (event) => {
   elements.createForm.reset();
 
   pushLog(`Created ${path} inside the IDE.`, "info");
+  renderAll();
+});
+
+elements.renameForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const nextName = String(elements.renameInput.value || "").trim();
+
+  if (!nextName) {
+    return;
+  }
+
+  state.workspaceName = nextName;
+  persistState();
+  closeRenameModal();
+  pushLog(`Renamed workspace to ${nextName}.`, "info");
   renderAll();
 });
 
@@ -3917,6 +3964,19 @@ elements.exportProject.addEventListener("click", () => {
   elements.panelMenu.hidden = true;
   elements.panelMenuToggle.setAttribute("aria-expanded", "false");
 });
+elements.renameProject.addEventListener("click", () => {
+  elements.renameInput.value = state.workspaceName || "frontend-studio";
+  elements.renameModal.hidden = false;
+  elements.panelMenu.hidden = true;
+  elements.panelMenuToggle.setAttribute("aria-expanded", "false");
+  elements.renameInput.focus();
+  elements.renameInput.select();
+});
+elements.openExtensions.addEventListener("click", () => {
+  elements.extensionsModal.hidden = false;
+  elements.panelMenu.hidden = true;
+  elements.panelMenuToggle.setAttribute("aria-expanded", "false");
+});
 elements.signOut.addEventListener("click", async () => {
   clearApprovedAccess();
   cloudSyncReady = false;
@@ -3979,6 +4039,14 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !elements.modal.hidden) {
     elements.modal.hidden = true;
     elements.createForm.reset();
+  }
+
+  if (event.key === "Escape" && elements.renameModal && !elements.renameModal.hidden) {
+    closeRenameModal();
+  }
+
+  if (event.key === "Escape" && elements.extensionsModal && !elements.extensionsModal.hidden) {
+    closeExtensionsModal();
   }
 
   if (event.key === "Escape" && elements.runLimitModal && !elements.runLimitModal.hidden) {

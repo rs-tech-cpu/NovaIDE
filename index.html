@@ -44,11 +44,13 @@
             Options
           </button>
           <div class="panel-menu glass-subtle" data-panel-menu hidden>
+            <button class="panel-menu__item" type="button" data-rename-project>Rename Project</button>
             <button class="panel-menu__item" type="button" data-menu-toggle="explorer">Toggle File Hierarchy</button>
             <button class="panel-menu__item" type="button" data-menu-toggle="git">Toggle Gemini</button>
             <button class="panel-menu__item" type="button" data-menu-toggle="preview">Toggle Live Preview</button>
             <button class="panel-menu__item" type="button" data-menu-toggle="terminal">Toggle Terminal</button>
             <button class="panel-menu__item" type="button" data-export-project>Export Project</button>
+            <button class="panel-menu__item" type="button" data-open-extensions>Extensions</button>
             <button class="panel-menu__item panel-menu__item--danger" type="button" data-sign-out>Sign Out</button>
           </div>
         </div>
@@ -327,6 +329,87 @@
       </p>
       <div class="modal__actions">
         <button class="pill pill--button pill--accent" type="button" data-close-run-limit>Continue Editing</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" data-rename-modal hidden>
+    <div class="modal__backdrop" data-close-rename></div>
+    <form class="modal__card glass" data-rename-form>
+      <div class="modal__header">
+        <div>
+          <p class="eyebrow">Workspace</p>
+          <h3>Rename Project</h3>
+        </div>
+        <button class="icon-button icon-button--ghost" type="button" aria-label="Close rename project dialog" data-close-rename>x</button>
+      </div>
+      <label class="field field--compact">
+        <span>Project name</span>
+        <input class="field__input" type="text" maxlength="48" placeholder="frontend-studio" data-rename-input>
+      </label>
+      <p class="modal__copy">This name appears in the top bar and is used for the exported project zip file.</p>
+      <div class="modal__actions">
+        <button class="pill pill--button" type="button" data-close-rename>Cancel</button>
+        <button class="pill pill--button pill--accent" type="submit">Save Name</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal" data-extensions-modal hidden>
+    <div class="modal__backdrop" data-close-extensions></div>
+    <div class="modal__card glass modal__card--extensions">
+      <div class="modal__header">
+        <div>
+          <p class="eyebrow">Extensions</p>
+          <h3>Connect more of your workflow</h3>
+        </div>
+        <button class="icon-button icon-button--ghost" type="button" aria-label="Close extensions dialog" data-close-extensions>x</button>
+      </div>
+      <p class="modal__copy">These extension cards are preview-only right now. Functionality can be wired in later.</p>
+      <div class="extensions-grid">
+        <article class="extension-card extension-card--featured">
+          <span class="extension-card__tag">Major</span>
+          <h4>GitHub</h4>
+          <p>Review repositories, issues, pull requests, and collaboration flow directly beside the editor.</p>
+        </article>
+        <article class="extension-card extension-card--featured">
+          <span class="extension-card__tag">Major</span>
+          <h4>Vercel</h4>
+          <p>Preview deployments, environment setup, and release-friendly workflows for web projects.</p>
+        </article>
+        <article class="extension-card extension-card--featured">
+          <span class="extension-card__tag">Major</span>
+          <h4>Slack</h4>
+          <p>Send project updates, share snippets, and stay connected to team conversations while building.</p>
+        </article>
+        <article class="extension-card">
+          <span class="extension-card__tag">Preview</span>
+          <h4>Notion</h4>
+          <p>Keep docs, specs, and planning notes within reach when shaping product work.</p>
+        </article>
+        <article class="extension-card">
+          <span class="extension-card__tag">Preview</span>
+          <h4>Figma</h4>
+          <p>Reference designs and component direction alongside the files you are editing.</p>
+        </article>
+        <article class="extension-card">
+          <span class="extension-card__tag">Preview</span>
+          <h4>Supabase</h4>
+          <p>Surface database and auth context for modern app prototypes and full-stack builds.</p>
+        </article>
+        <article class="extension-card">
+          <span class="extension-card__tag">Preview</span>
+          <h4>Linear</h4>
+          <p>Track engineering tasks and keep implementation aligned with active issues.</p>
+        </article>
+        <article class="extension-card">
+          <span class="extension-card__tag">Preview</span>
+          <h4>Discord</h4>
+          <p>Share progress and ideas quickly with community or internal dev channels.</p>
+        </article>
+      </div>
+      <div class="modal__actions">
+        <button class="pill pill--button pill--accent" type="button" data-close-extensions>Close</button>
       </div>
     </div>
   </div>
