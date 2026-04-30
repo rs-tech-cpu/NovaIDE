@@ -65,14 +65,19 @@ const elements = {
   renameModal: document.querySelector("[data-rename-modal]"),
   extensionsModal: document.querySelector("[data-extensions-modal]"),
   githubModal: document.querySelector("[data-github-modal]"),
+  slackModal: document.querySelector("[data-slack-modal]"),
   createForm: document.querySelector("[data-create-form]"),
   renameForm: document.querySelector("[data-rename-form]"),
   githubForm: document.querySelector("[data-github-form]"),
+  slackForm: document.querySelector("[data-slack-form]"),
   renameInput: document.querySelector("[data-rename-input]"),
   githubRepoInput: document.querySelector("[data-github-repo-input]"),
   githubRefInput: document.querySelector("[data-github-ref-input]"),
   githubFolderInput: document.querySelector("[data-github-folder-input]"),
   githubStatus: document.querySelector("[data-github-status]"),
+  slackTitleInput: document.querySelector("[data-slack-title-input]"),
+  slackMessageInput: document.querySelector("[data-slack-message-input]"),
+  slackStatus: document.querySelector("[data-slack-status]"),
   newFilePath: document.querySelector("[data-new-file-path]"),
   newFileTemplate: document.querySelector("[data-new-file-template]"),
   saveWorkspace: document.querySelector("[data-save-workspace]"),
@@ -89,7 +94,9 @@ const elements = {
   renameProject: document.querySelector("[data-rename-project]"),
   openExtensions: document.querySelector("[data-open-extensions]"),
   openGitHubImport: document.querySelector("[data-open-github-import]"),
+  openSlackShare: document.querySelector("[data-open-slack-share]"),
   githubSubmit: document.querySelector("[data-github-submit]"),
+  slackSubmit: document.querySelector("[data-slack-submit]"),
   signOut: document.querySelector("[data-sign-out]"),
   profileName: document.querySelector("[data-profile-name]"),
   profileEmail: document.querySelector("[data-profile-email]"),
@@ -3190,6 +3197,16 @@ function closeGitHubModal() {
   setGitHubStatus("");
 }
 
+function closeSlackModal() {
+  if (!elements.slackModal || !elements.slackForm) {
+    return;
+  }
+
+  elements.slackModal.hidden = true;
+  elements.slackForm.reset();
+  setSlackStatus("");
+}
+
 function setGitHubStatus(message, tone = "info") {
   if (!elements.githubStatus) {
     return;
@@ -3199,6 +3216,17 @@ function setGitHubStatus(message, tone = "info") {
   elements.githubStatus.hidden = !normalizedMessage;
   elements.githubStatus.textContent = normalizedMessage;
   elements.githubStatus.dataset.tone = normalizedMessage ? tone : "";
+}
+
+function setSlackStatus(message, tone = "info") {
+  if (!elements.slackStatus) {
+    return;
+  }
+
+  const normalizedMessage = String(message || "").trim();
+  elements.slackStatus.hidden = !normalizedMessage;
+  elements.slackStatus.textContent = normalizedMessage;
+  elements.slackStatus.dataset.tone = normalizedMessage ? tone : "";
 }
 
 function deleteSelectedItem() {
@@ -3429,6 +3457,68 @@ function downloadProjectArchive() {
 
   downloadBlob(zipBlob, `${baseName}.zip`);
   pushLog(`Exported ${state.files.length} files as ${baseName}.zip.`, "info");
+}
+
+function getPendingChangeCount() {
+  return state.files.filter((file) => file.content !== file.originalContent).length;
+}
+
+function buildSlackWorkspacePayload() {
+  const activeFile = getActiveFile();
+
+  return {
+    workspaceName: state.workspaceName || "frontend-studio",
+    activeFile: activeFile?.path || "No active file",
+    language: getLanguageLabel(activeFile?.language || "text"),
+    totalFiles: state.files.length,
+    pendingChanges: getPendingChangeCount(),
+  };
+}
+
+async function sendSlackUpdate(event) {
+  event.preventDefault();
+
+  const title = String(elements.slackTitleInput?.value || "").trim();
+  const message = String(elements.slackMessageInput?.value || "").trim();
+
+  if (!title || !message) {
+    setSlackStatus("Add both a title and a message before sending your update.", "warn");
+    return;
+  }
+
+  setSlackStatus("Sending your update to Slack...", "info");
+
+  if (elements.slackSubmit) {
+    elements.slackSubmit.disabled = true;
+  }
+
+  try {
+    const response = await fetch("/api/slack-share", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title,
+        message,
+        ...buildSlackWorkspacePayload(),
+      }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `Slack share failed with ${response.status}.`);
+    }
+
+    pushLog(`Sent a Slack update for ${state.workspaceName || "this workspace"}.`, "info");
+    closeSlackModal();
+  } catch (error) {
+    setSlackStatus(error instanceof Error ? error.message : "Slack share failed.", "error");
+  } finally {
+    if (elements.slackSubmit) {
+      elements.slackSubmit.disabled = false;
+    }
+  }
 }
 
 function renderAll() {
@@ -3997,6 +4087,12 @@ document.querySelectorAll("[data-close-github-modal]").forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-close-slack-modal]").forEach((button) => {
+  button.addEventListener("click", () => {
+    closeSlackModal();
+  });
+});
+
 document.querySelectorAll("[data-close-run-limit]").forEach((button) => {
   button.addEventListener("click", () => {
     closeRunLimitModal();
@@ -4043,6 +4139,7 @@ elements.renameForm.addEventListener("submit", (event) => {
 });
 
 elements.githubForm?.addEventListener("submit", importGitHubRepository);
+elements.slackForm?.addEventListener("submit", sendSlackUpdate);
 
 elements.createFolder.addEventListener("click", () => {
   const selectedItem = getSelectedItem();
@@ -4181,6 +4278,19 @@ elements.openGitHubImport?.addEventListener("click", () => {
     elements.githubRepoInput.focus();
   }
 });
+elements.openSlackShare?.addEventListener("click", () => {
+  closeExtensionsModal();
+  setSlackStatus("");
+  if (elements.slackTitleInput) {
+    elements.slackTitleInput.value = `${state.workspaceName || "frontend-studio"} progress update`;
+  }
+  if (elements.slackModal) {
+    elements.slackModal.hidden = false;
+  }
+  if (elements.slackMessageInput) {
+    elements.slackMessageInput.focus();
+  }
+});
 elements.signOut.addEventListener("click", async () => {
   clearApprovedAccess();
   cloudSyncReady = false;
@@ -4255,6 +4365,10 @@ window.addEventListener("keydown", (event) => {
 
   if (event.key === "Escape" && elements.githubModal && !elements.githubModal.hidden) {
     closeGitHubModal();
+  }
+
+  if (event.key === "Escape" && elements.slackModal && !elements.slackModal.hidden) {
+    closeSlackModal();
   }
 
   if (event.key === "Escape" && elements.runLimitModal && !elements.runLimitModal.hidden) {

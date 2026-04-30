@@ -1503,6 +1503,19 @@ body.terminal-collapsed .bottom-panel {
   justify-content: center;
 }
 
+.slack-preview {
+  margin-top: 18px;
+  padding: 16px;
+}
+
+.slack-preview__list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+  display: grid;
+  gap: 8px;
+}
+
 .field {
   display: grid;
   gap: 8px;
