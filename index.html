@@ -13,6 +13,22 @@
 <body>
   <div class="noise"></div>
 
+  <div class="project-loading" data-project-loading hidden>
+    <div class="project-loading__backdrop"></div>
+    <div class="project-loading__card glass">
+      <div class="project-loading__spinner" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="project-loading__copy">
+        <p class="eyebrow">Opening Workspace</p>
+        <h2 data-project-loading-title>Loading your Nova project...</h2>
+        <p data-project-loading-message>Large projects may take a little longer to retrieve from your account.</p>
+      </div>
+    </div>
+  </div>
+
   <div class="app-shell">
     <header class="topbar glass">
       <div class="topbar__group">

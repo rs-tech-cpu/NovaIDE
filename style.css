@@ -98,6 +98,89 @@ button {
   opacity: 0.5;
 }
 
+.project-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+}
+
+.project-loading[hidden] {
+  display: none;
+}
+
+.project-loading__backdrop {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 25% 20%, rgba(139, 233, 253, 0.12), transparent 28%),
+    radial-gradient(circle at 78% 24%, rgba(189, 147, 249, 0.16), transparent 32%),
+    rgba(5, 7, 12, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.project-loading__card {
+  position: relative;
+  width: min(520px, calc(100vw - 32px));
+  padding: 28px;
+  border-radius: 28px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 20px;
+  align-items: center;
+  animation: project-loading-fade 320ms ease;
+}
+
+.project-loading__spinner {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(139, 233, 253, 0.14), rgba(189, 147, 249, 0.16));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.project-loading__spinner span {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #8be9fd, #bd93f9);
+  box-shadow: 0 0 18px rgba(139, 233, 253, 0.35);
+  animation: project-loading-orbit 1.2s ease-in-out infinite;
+}
+
+.project-loading__spinner span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.project-loading__spinner span:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+.project-loading__spinner span:nth-child(3) {
+  animation-delay: 0.36s;
+}
+
+.project-loading__copy {
+  display: grid;
+  gap: 8px;
+}
+
+.project-loading__copy h2 {
+  margin: 0;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+}
+
+.project-loading__copy p:last-child {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
 .app-shell {
   position: relative;
   min-height: 100vh;
@@ -1619,6 +1702,35 @@ body.terminal-collapsed .bottom-panel {
 @keyframes blink {
   50% {
     opacity: 0;
+  }
+}
+
+@keyframes project-loading-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes project-loading-orbit {
+  0% {
+    transform: rotate(0deg) translateX(18px) scale(0.8);
+    opacity: 0.45;
+  }
+
+  50% {
+    transform: rotate(180deg) translateX(18px) scale(1);
+    opacity: 1;
+  }
+
+  100% {
+    transform: rotate(360deg) translateX(18px) scale(0.8);
+    opacity: 0.45;
   }
 }
 

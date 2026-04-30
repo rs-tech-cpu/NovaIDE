@@ -16,6 +16,9 @@ const FIREBASE_CONFIG = {
 
 const elements = {
   fileSearch: document.querySelector("[data-file-search]"),
+  projectLoading: document.querySelector("[data-project-loading]"),
+  projectLoadingTitle: document.querySelector("[data-project-loading-title]"),
+  projectLoadingMessage: document.querySelector("[data-project-loading-message]"),
   workspaceName: document.querySelector("[data-workspace-name]"),
   tree: document.querySelector("[data-tree]"),
   treeCaption: document.querySelector("[data-tree-caption]"),
@@ -326,6 +329,30 @@ let shellBackend = {
 const EDITOR_INDENT = "  ";
 const scriptLoaders = {};
 let authInstance = null;
+
+function showProjectLoading(title = "Loading your Nova project...", message = "Large projects may take a little longer to retrieve from your account.") {
+  if (!elements.projectLoading) {
+    return;
+  }
+
+  elements.projectLoading.hidden = false;
+
+  if (elements.projectLoadingTitle) {
+    elements.projectLoadingTitle.textContent = title;
+  }
+
+  if (elements.projectLoadingMessage) {
+    elements.projectLoadingMessage.textContent = message;
+  }
+}
+
+function hideProjectLoading() {
+  if (!elements.projectLoading) {
+    return;
+  }
+
+  elements.projectLoading.hidden = true;
+}
 
 function getFirstName(email, displayName) {
   if (displayName) {
@@ -4251,23 +4278,31 @@ ensureFirebaseAuth()
   .then((auth) => {
     auth.onAuthStateChanged(async (user) => {
       if (!applyAuthenticatedUser(user)) {
+        hideProjectLoading();
         clearApprovedAccess();
         cloudSyncReady = false;
         window.clearTimeout(cloudSaveTimer);
         return;
       }
 
+      showProjectLoading(
+        "Loading your Nova project...",
+        "Large projects may take a little longer to retrieve from your account."
+      );
+
       const normalizedEmail = String(user.email || "").trim().toLowerCase();
 
       try {
         const result = await fetchEarlyAccessStatus(normalizedEmail);
         if (!result.approved) {
+          hideProjectLoading();
           clearApprovedAccess();
           window.location.href = "home.html";
           return;
         }
         rememberApprovedAccess(normalizedEmail);
       } catch (error) {
+        hideProjectLoading();
         clearApprovedAccess();
         cloudSyncReady = false;
         window.location.href = "home.html";
@@ -4282,8 +4317,10 @@ ensureFirebaseAuth()
       }
       renderAll();
       checkShellBackend();
+      hideProjectLoading();
     });
   })
   .catch(() => {
+    hideProjectLoading();
     window.location.href = "home.html";
   });
