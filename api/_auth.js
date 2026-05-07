@@ -1,7 +1,7 @@
 import { createVerify, X509Certificate } from "node:crypto";
 import { fetchWaitlistDecisionByEmail } from "./_waitlist.js";
 
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "pixelchat-82d61";
+const FIREBASE_PROJECT_ID = String(process.env.FIREBASE_PROJECT_ID || "pixelchat-82d61").trim();
 const FIREBASE_CERTS_URL = "https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com";
 
 let cachedCerts = null;
@@ -80,7 +80,9 @@ export async function verifyFirebaseIdToken(idToken) {
   const expectedIssuer = `https://securetoken.google.com/${FIREBASE_PROJECT_ID}`;
 
   if (payload.aud !== FIREBASE_PROJECT_ID || payload.iss !== expectedIssuer) {
-    throw new Error("Firebase ID token project mismatch.");
+    throw new Error(
+      `Firebase ID token project mismatch. Expected aud "${FIREBASE_PROJECT_ID}" and iss "${expectedIssuer}", received aud "${String(payload.aud || "")}" and iss "${String(payload.iss || "")}".`
+    );
   }
 
   if (!payload.sub || typeof payload.sub !== "string") {
