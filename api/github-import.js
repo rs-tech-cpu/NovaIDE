@@ -1,3 +1,6 @@
+import { requireNovaAccess } from "./_auth.js";
+import { enforceRateLimit } from "./_rate-limit.js";
+
 const MAX_IMPORT_FILES = 160;
 const MAX_FILE_BYTES = 350000;
 
@@ -46,6 +49,16 @@ export default async function handler(request, response) {
     return;
   }
 
+  if (!enforceRateLimit(request, response, { keyPrefix: "github-import", limit: 8, windowMs: 10 * 60_000 })) {
+    return;
+  }
+
+  const access = await requireNovaAccess(request, response);
+
+  if (!access) {
+    return;
+  }
+
   const { repository = "", ref = "" } = request.body || {};
   const parsedRepository = parseRepositoryInput(repository);
 
@@ -66,7 +79,7 @@ export default async function handler(request, response) {
       return;
     }
 
-    const resolvedRef = String(ref || "").trim() || repoMetaResult.data.default_branch || "main";
+    const resolvedRef = String(ref || "").trim().slice(0, 120) || repoMetaResult.data.default_branch || "main";
     const treeResult = await requestGitHubJson(
       `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(resolvedRef)}?recursive=1`
     );
