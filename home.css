@@ -17,23 +17,26 @@
 html,
 body {
   min-height: 100%;
-  background:
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background-color: #080a12;
+  background-image:
     radial-gradient(circle at top left, rgba(189, 147, 249, 0.26), transparent 28%),
     radial-gradient(circle at top right, rgba(139, 233, 253, 0.18), transparent 24%),
     radial-gradient(circle at bottom right, rgba(255, 121, 198, 0.14), transparent 22%),
     linear-gradient(145deg, #080a12 0%, #10131f 52%, #0a0d17 100%);
+  overscroll-behavior: none;
 }
 
 body {
-  margin: 0;
   overflow: auto;
+  overflow-x: hidden;
+  background: transparent;
   font-family: "Space Grotesk", "Segoe UI", sans-serif;
   color: var(--text-primary);
-  background:
-    radial-gradient(circle at top left, rgba(189, 147, 249, 0.26), transparent 28%),
-    radial-gradient(circle at top right, rgba(139, 233, 253, 0.18), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(255, 121, 198, 0.14), transparent 22%),
-    linear-gradient(145deg, #080a12 0%, #10131f 52%, #0a0d17 100%);
 }
 
 a {
