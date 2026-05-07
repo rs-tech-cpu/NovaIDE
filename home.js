@@ -281,7 +281,9 @@ async function monitorAuthenticatedUser() {
 
         clearApprovedAccess();
         renderAccessState(user);
-        earlyAccessMessage.textContent = "We could not verify your early access yet. Please join the waitlist below and try again later.";
+        earlyAccessMessage.textContent = error instanceof Error
+          ? error.message
+          : "We could not verify your early access yet. Please join the waitlist below and try again later.";
       }
     });
   } catch (error) {
