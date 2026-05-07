@@ -116,9 +116,32 @@ function rememberApprovedAccess(email) {
   window.sessionStorage.setItem(APPROVED_ACCESS_KEY, String(email || "").trim().toLowerCase());
 }
 
-async function fetchEarlyAccessStatus(email) {
-  const response = await fetch(`/api/check-access?email=${encodeURIComponent(email)}`, {
+async function getAuthorizedHeaders(includeJson = false) {
+  const auth = await ensureFirebaseAuth();
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("You need to be signed in.");
+  }
+
+  const idToken = await user.getIdToken();
+  const headers = {
+    Authorization: `Bearer ${idToken}`,
+  };
+
+  if (includeJson) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  return headers;
+}
+
+async function fetchEarlyAccessStatus() {
+  const response = await fetch("/api/check-access", {
+    method: "POST",
+    headers: await getAuthorizedHeaders(true),
     cache: "no-store",
+    body: "{}",
   });
 
   const data = await response.json();
@@ -234,7 +257,7 @@ async function monitorAuthenticatedUser() {
       earlyAccessMessage.textContent = "Checking your Nova early access status...";
 
       try {
-        const result = await fetchEarlyAccessStatus(user.email || "");
+        const result = await fetchEarlyAccessStatus();
 
         if (accessRequestToken !== requestToken) {
           return;

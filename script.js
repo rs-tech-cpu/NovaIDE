@@ -445,9 +445,32 @@ async function ensureFirebaseAuth() {
   return authInstance;
 }
 
-async function fetchEarlyAccessStatus(email) {
-  const response = await fetch(`/api/check-access?email=${encodeURIComponent(email)}`, {
+async function getAuthorizedHeaders(includeJson = false) {
+  const auth = await ensureFirebaseAuth();
+  const user = auth.currentUser;
+
+  if (!user) {
+    throw new Error("You need to be signed in.");
+  }
+
+  const idToken = await user.getIdToken();
+  const headers = {
+    Authorization: `Bearer ${idToken}`,
+  };
+
+  if (includeJson) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  return headers;
+}
+
+async function fetchEarlyAccessStatus() {
+  const response = await fetch("/api/check-access", {
+    method: "POST",
+    headers: await getAuthorizedHeaders(true),
     cache: "no-store",
+    body: "{}",
   });
   const data = await response.json();
 
@@ -456,6 +479,26 @@ async function fetchEarlyAccessStatus(email) {
   }
 
   return data;
+}
+
+async function refreshServerRunQuota() {
+  const response = await fetch("/api/quota-status", {
+    method: "GET",
+    headers: await getAuthorizedHeaders(),
+    cache: "no-store",
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || `Quota check failed with ${response.status}`);
+  }
+
+  if (data.quota && typeof data.quota.used === "number") {
+    state.scriptRunCount = data.quota.used;
+    persistState();
+  }
+
+  return data.quota || null;
 }
 
 function clearApprovedAccess() {
@@ -574,10 +617,6 @@ function getRemainingScriptRuns() {
 
 function hasScriptRunQuota() {
   return getRemainingScriptRuns() > 0;
-}
-
-function consumeScriptRunQuota() {
-  state.scriptRunCount = Math.min(SCRIPT_RUN_LIMIT, (state.scriptRunCount || 0) + 1);
 }
 
 function getScriptRunLimitMessage() {
@@ -2353,27 +2392,12 @@ async function runRemoteFileWithOneCompiler(filePath, expectedLanguage = "", std
     return;
   }
 
-  if (!hasScriptRunQuota()) {
-    pushTerminalLine(getScriptRunLimitMessage(), "accent");
-    openRunLimitModal();
-    return;
-  }
-
   pushTerminalLine(`Running ${file.path} on OneCompiler as ${runtime.label}...`, "muted");
-  consumeScriptRunQuota();
-  if (!hasScriptRunQuota()) {
-    pushTerminalLine(getScriptRunLimitMessage(), "warn");
-    openRunLimitModal();
-  }
-  persistState();
-  renderAll();
 
   try {
     const response = await fetch("/api/run-python", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: await getAuthorizedHeaders(true),
       body: JSON.stringify({
         language: runtime.apiLanguage,
         stdin,
@@ -2388,7 +2412,18 @@ async function runRemoteFileWithOneCompiler(filePath, expectedLanguage = "", std
 
     const data = await response.json();
 
+    if (data?.quota && typeof data.quota.used === "number") {
+      state.scriptRunCount = data.quota.used;
+      persistState();
+      renderAll();
+    }
+
     if (!response.ok || data.status === "failed") {
+      if (response.status === 429) {
+        pushTerminalLine(data.error || getScriptRunLimitMessage(), "warn");
+        openRunLimitModal();
+        return;
+      }
       pushTerminalLine(data.error || `OneCompiler request failed with ${response.status}`, "accent");
       return;
     }
@@ -2823,9 +2858,7 @@ async function sendChatMessage() {
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: await getAuthorizedHeaders(true),
       body: JSON.stringify({
         model: normalizeChatModel(state.openrouterModel),
         prompt,
@@ -3495,9 +3528,7 @@ async function sendSlackUpdate(event) {
   try {
     const response = await fetch("/api/slack-share", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: await getAuthorizedHeaders(true),
       body: JSON.stringify({
         title,
         message,
@@ -3741,9 +3772,7 @@ async function importGitHubRepository(event) {
   try {
     const response = await fetch("/api/github-import", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: await getAuthorizedHeaders(true),
       body: JSON.stringify({
         repository,
         ref,
@@ -4404,17 +4433,15 @@ ensureFirebaseAuth()
         "Large projects may take a little longer to retrieve from your account."
       );
 
-      const normalizedEmail = String(user.email || "").trim().toLowerCase();
-
       try {
-        const result = await fetchEarlyAccessStatus(normalizedEmail);
+        const result = await fetchEarlyAccessStatus();
         if (!result.approved) {
           hideProjectLoading();
           clearApprovedAccess();
           window.location.href = "home.html";
           return;
         }
-        rememberApprovedAccess(normalizedEmail);
+        rememberApprovedAccess(String(user.email || "").trim().toLowerCase());
       } catch (error) {
         hideProjectLoading();
         clearApprovedAccess();
@@ -4428,6 +4455,13 @@ ensureFirebaseAuth()
       } catch (error) {
         cloudSyncReady = false;
         pushLog("Cloud sync is unavailable right now. Using this device's saved workspace.", "warn");
+      }
+      try {
+        await refreshServerRunQuota();
+      } catch (error) {
+        state.scriptRunCount = SCRIPT_RUN_LIMIT;
+        persistState();
+        pushLog("Server-side run quota could not be refreshed right now.", "warn");
       }
       renderAll();
       checkShellBackend();
