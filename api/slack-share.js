@@ -1,7 +1,20 @@
+import { requireNovaAccess } from "./_auth.js";
+import { enforceRateLimit } from "./_rate-limit.js";
+
 export default async function handler(request, response) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
     response.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  if (!enforceRateLimit(request, response, { keyPrefix: "slack-share", limit: 10, windowMs: 5 * 60_000 })) {
+    return;
+  }
+
+  const access = await requireNovaAccess(request, response);
+
+  if (!access) {
     return;
   }
 
@@ -22,8 +35,8 @@ export default async function handler(request, response) {
     pendingChanges = 0,
   } = request.body || {};
 
-  const normalizedTitle = String(title || "").trim();
-  const normalizedMessage = String(message || "").trim();
+  const normalizedTitle = String(title || "").trim().slice(0, 120);
+  const normalizedMessage = String(message || "").trim().slice(0, 3000);
 
   if (!normalizedTitle || !normalizedMessage) {
     response.status(400).json({ error: "Both a title and message are required." });
