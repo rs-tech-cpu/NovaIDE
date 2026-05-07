@@ -1,3 +1,6 @@
+import { requireNovaAccess } from "./_auth.js";
+import { enforceRateLimit } from "./_rate-limit.js";
+
 const SUPPORTED_GEMINI_MODELS = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash"];
 
 function normalizeModel(model) {
@@ -43,10 +46,77 @@ function buildConversationContext(history) {
     .join("\n\n");
 }
 
+function getLastAssistantMessage(history) {
+  const normalized = normalizeHistory(history);
+
+  for (let index = normalized.length - 1; index >= 0; index -= 1) {
+    if (normalized[index].role === "model") {
+      return normalized[index].text;
+    }
+  }
+
+  return "";
+}
+
+function looksLikeRiddle(text) {
+  const normalized = String(text || "").trim().toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  return normalized.includes("what am i?")
+    || normalized.includes("who am i?")
+    || normalized.includes("what am i")
+    || normalized.includes("who am i");
+}
+
+function isRiddleAnswerFollowUp(prompt) {
+  const normalized = String(prompt || "").trim().toLowerCase();
+
+  if (!normalized) {
+    return false;
+  }
+
+  return normalized === "really?"
+    || normalized === "what are u?"
+    || normalized === "what are you?"
+    || normalized === "who are u?"
+    || normalized === "who are you?"
+    || normalized === "i dont know, what are u?"
+    || normalized === "i dont know, what are you?"
+    || normalized === "i don't know, what are u?"
+    || normalized === "i don't know, what are you?"
+    || normalized === "i dont know, who are u?"
+    || normalized === "i dont know, who are you?"
+    || normalized === "i don't know, who are u?"
+    || normalized === "i don't know, who are you?";
+}
+
+function buildEffectivePrompt(prompt, history) {
+  const lastAssistantMessage = getLastAssistantMessage(history);
+
+  if (looksLikeRiddle(lastAssistantMessage) && isRiddleAnswerFollowUp(prompt)) {
+    return `The user is replying to the previous riddle and wants the answer now. Give the answer to that riddle directly and briefly.\n\nOriginal follow-up:\n${prompt}`;
+  }
+
+  return prompt;
+}
+
 export default async function handler(request, response) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
     response.status(405).json({ error: "Method not allowed" });
+    return;
+  }
+
+  if (!enforceRateLimit(request, response, { keyPrefix: "chat", limit: 30, windowMs: 60_000 })) {
+    return;
+  }
+
+  const access = await requireNovaAccess(request, response);
+
+  if (!access) {
     return;
   }
 
@@ -58,23 +128,32 @@ export default async function handler(request, response) {
   }
 
   const { model = "gemini-2.5-flash-lite", prompt = "", workspaceContext = "", history = [] } = request.body || {};
+  const normalizedPrompt = String(prompt || "").trim().slice(0, 4000);
+  const normalizedWorkspaceContext = String(workspaceContext || "").slice(0, 35000);
+  const normalizedHistory = Array.isArray(history)
+    ? history.map((entry) => ({
+        role: entry?.role,
+        content: String(entry?.content || "").slice(0, 2000),
+      })).slice(-10)
+    : [];
 
-  if (!String(prompt).trim()) {
+  if (!normalizedPrompt) {
     response.status(400).json({ error: "Prompt is required." });
     return;
   }
 
   try {
-    const conversationContext = buildConversationContext(history);
+    const effectivePrompt = buildEffectivePrompt(normalizedPrompt, normalizedHistory);
+    const conversationContext = buildConversationContext(normalizedHistory);
     const contents = [
       {
         role: "user",
         parts: [
           {
             text: [
-              workspaceContext ? `Workspace context:\n${workspaceContext}` : "",
+              normalizedWorkspaceContext ? `Workspace context:\n${normalizedWorkspaceContext}` : "",
               conversationContext ? `Recent conversation:\n${conversationContext}` : "",
-              `Latest user request:\n${prompt}`,
+              `Latest user request:\n${effectivePrompt}`,
             ].filter(Boolean).join("\n\n"),
           },
         ],
