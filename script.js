@@ -112,16 +112,16 @@ const defaultFiles = [
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New Project</title>
-  <link rel="stylesheet" href="styles/app.css">
+  <link rel="stylesheet" href="app.css">
 </head>
 <body>
   <main id="app"></main>
-  <script src="scripts/app.js"><\/script>
+  <script src="app.js"><\/script>
 </body>
 </html>`,
   },
   {
-    path: "styles/app.css",
+    path: "app.css",
     content: `body {
   margin: 0;
   min-height: 100vh;
@@ -129,7 +129,7 @@ const defaultFiles = [
 }`,
   },
   {
-    path: "scripts/app.js",
+    path: "app.js",
     content: `const app = document.querySelector("#app");
 
 if (app) {
@@ -593,12 +593,19 @@ async function syncWorkspaceFromCloud(user) {
     state = loadState();
     pushLog("Workspace loaded from your account.", "info");
   } else {
+    const firstAccountState = createDefaultState();
+    firstAccountState.scriptRunCount = 0;
+    firstAccountState.logs = [
+      createLogEntry("New workspace created for your account.", "info"),
+    ];
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(firstAccountState));
+    state = loadState();
+
     await workspaceRef.set({
       workspace: getSerializableState(),
       email: user.email || "",
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
-    pushLog("Workspace backup created for this account.", "info");
   }
 
   cloudSyncReady = true;
