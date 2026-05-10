@@ -304,7 +304,7 @@ function loadState() {
       openrouterModel: normalizeChatModel(parsed.openrouterModel),
       previewWidth: typeof parsed.previewWidth === "number" ? parsed.previewWidth : createDefaultState().previewWidth,
       sidebarWidth: typeof parsed.sidebarWidth === "number" ? parsed.sidebarWidth : createDefaultState().sidebarWidth,
-      scriptRunCount: typeof parsed.scriptRunCount === "number" ? parsed.scriptRunCount : 0,
+      scriptRunCount: 0,
       collapsedFolders: Array.isArray(parsed.collapsedFolders) ? parsed.collapsedFolders : [],
       logs: Array.isArray(parsed.logs) && parsed.logs.length
         ? parsed.logs.slice(0, 18)
@@ -323,6 +323,7 @@ let terminalPendingAction = null;
 let cloudSaveTimer = null;
 let firestoreInstance = null;
 let cloudSyncReady = false;
+let serverRunQuotaReady = false;
 let draggedTreeFilePath = "";
 let suggestionState = {
   items: [],
@@ -495,7 +496,7 @@ async function refreshServerRunQuota() {
 
   if (data.quota && typeof data.quota.used === "number") {
     state.scriptRunCount = data.quota.used;
-    persistState();
+    serverRunQuotaReady = true;
   }
 
   return data.quota || null;
@@ -531,8 +532,10 @@ function getShellBackendBaseUrl() {
 }
 
 function getSerializableState() {
+  const { scriptRunCount, ...serializableState } = state;
+
   return {
-    ...state,
+    ...serializableState,
     collapsedFolders: Array.from(new Set(state.collapsedFolders)),
     logs: state.logs.slice(0, 18),
   };
@@ -619,14 +622,22 @@ function persistState() {
 }
 
 function getRemainingScriptRuns() {
+  if (!serverRunQuotaReady) {
+    return 0;
+  }
+
   return Math.max(0, SCRIPT_RUN_LIMIT - (state.scriptRunCount || 0));
 }
 
 function hasScriptRunQuota() {
-  return getRemainingScriptRuns() > 0;
+  return serverRunQuotaReady && getRemainingScriptRuns() > 0;
 }
 
 function getScriptRunLimitMessage() {
+  if (!serverRunQuotaReady) {
+    return "Nova is still checking your script run quota. Please try again in a moment.";
+  }
+
   return `You have reached the ${SCRIPT_RUN_LIMIT}-run limit for Nova IDE script execution. The editor and AI assistant are still available.`;
 }
 
@@ -1410,7 +1421,9 @@ function renderEditor() {
     elements.runActiveFile.hidden = false;
     elements.runActiveFile.textContent = "Run Active File";
     elements.runActiveFile.setAttribute("aria-label", "Run active file");
-    elements.runCount.textContent = `${Math.min(state.scriptRunCount || 0, SCRIPT_RUN_LIMIT)}/${SCRIPT_RUN_LIMIT}`;
+    elements.runCount.textContent = serverRunQuotaReady
+      ? `${Math.min(state.scriptRunCount || 0, SCRIPT_RUN_LIMIT)}/${SCRIPT_RUN_LIMIT}`
+      : `--/${SCRIPT_RUN_LIMIT}`;
     elements.debugFile.textContent = "No file selected";
     elements.debugLanguage.textContent = "Text";
     return;
@@ -1435,7 +1448,9 @@ function renderEditor() {
   elements.charCount.textContent = `${file.content.length} chars`;
   const canRunLanguage = isOneCompilerRunnable(file.language);
   const hasRunQuota = hasScriptRunQuota();
-  elements.runCount.textContent = `${Math.min(state.scriptRunCount || 0, SCRIPT_RUN_LIMIT)}/${SCRIPT_RUN_LIMIT}`;
+  elements.runCount.textContent = serverRunQuotaReady
+    ? `${Math.min(state.scriptRunCount || 0, SCRIPT_RUN_LIMIT)}/${SCRIPT_RUN_LIMIT}`
+    : `--/${SCRIPT_RUN_LIMIT}`;
   elements.runActiveFile.hidden = canRunLanguage && !hasRunQuota;
   elements.runActiveFile.disabled = !canRunLanguage || !hasRunQuota;
   elements.runActiveFile.textContent = canRunLanguage
@@ -2421,7 +2436,7 @@ async function runRemoteFileWithOneCompiler(filePath, expectedLanguage = "", std
 
     if (data?.quota && typeof data.quota.used === "number") {
       state.scriptRunCount = data.quota.used;
-      persistState();
+      serverRunQuotaReady = true;
       renderAll();
     }
 
@@ -4330,6 +4345,8 @@ elements.openSlackShare?.addEventListener("click", () => {
 elements.signOut.addEventListener("click", async () => {
   clearApprovedAccess();
   cloudSyncReady = false;
+  serverRunQuotaReady = false;
+  state.scriptRunCount = 0;
   window.clearTimeout(cloudSaveTimer);
   try {
     const auth = await ensureFirebaseAuth();
@@ -4427,6 +4444,9 @@ document.addEventListener("click", (event) => {
 ensureFirebaseAuth()
   .then((auth) => {
     auth.onAuthStateChanged(async (user) => {
+      serverRunQuotaReady = false;
+      state.scriptRunCount = 0;
+
       if (!applyAuthenticatedUser(user)) {
         hideProjectLoading();
         clearApprovedAccess();
@@ -4466,8 +4486,6 @@ ensureFirebaseAuth()
       try {
         await refreshServerRunQuota();
       } catch (error) {
-        state.scriptRunCount = SCRIPT_RUN_LIMIT;
-        persistState();
         pushLog("Server-side run quota could not be refreshed right now.", "warn");
       }
       renderAll();
