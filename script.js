@@ -1535,6 +1535,144 @@ function renderChatMessageBody(content) {
   return rendered.join("");
 }
 
+function extractFirstChatCodeBlock(content) {
+  const match = String(content || "").match(/```([\w#+.-]*)\n?([\s\S]*?)```/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    language: String(match[1] || "").trim().toLowerCase(),
+    code: String(match[2] || "").trim(),
+  };
+}
+
+function normalizeFenceLanguage(language) {
+  const normalized = String(language || "").trim().toLowerCase();
+
+  if (!normalized) {
+    return "";
+  }
+
+  const aliases = {
+    html: "html",
+    htm: "html",
+    css: "css",
+    js: "javascript",
+    jsx: "javascript",
+    javascript: "javascript",
+    mjs: "javascript",
+    py: "python",
+    python: "python",
+    "c++": "cpp",
+    cpp: "cpp",
+    cxx: "cpp",
+    cc: "cpp",
+    cs: "csharp",
+    "c#": "csharp",
+    csharp: "csharp",
+    swift: "swift",
+    java: "java",
+    json: "json",
+  };
+
+  return aliases[normalized] || "";
+}
+
+function getDefaultAssistantFilePath(language) {
+  const defaults = {
+    html: "index.html",
+    css: "app.css",
+    javascript: "app.js",
+    python: "main.py",
+    cpp: "main.cpp",
+    csharp: "Program.cs",
+    swift: "main.swift",
+    java: "Main.java",
+    json: "data.json",
+  };
+
+  return defaults[language] || "";
+}
+
+function resolveAssistantCodeTargetPath(language) {
+  const activeFile = getActiveFile();
+
+  if (activeFile && (!language || activeFile.language === language)) {
+    return activeFile.path;
+  }
+
+  const defaultPath = getDefaultAssistantFilePath(language);
+
+  if (defaultPath && state.files.some((file) => file.path === defaultPath)) {
+    return defaultPath;
+  }
+
+  const existingMatch = state.files.find((file) => file.language === language);
+
+  if (existingMatch) {
+    return existingMatch.path;
+  }
+
+  return defaultPath || activeFile?.path || "app.js";
+}
+
+function writeAssistantCodeToWorkspace(path, content, language) {
+  const normalizedPath = normalizePath(path);
+  const folderPath = getFolderPath(normalizedPath);
+  ensureFolderPath(folderPath === "workspace" ? "" : folderPath);
+
+  const existingFile = state.files.find((file) => file.path === normalizedPath);
+
+  if (existingFile) {
+    existingFile.content = content;
+    existingFile.language = language || inferLanguage(normalizedPath);
+    existingFile.updatedAt = Date.now();
+  } else {
+    state.files.push(createFileRecord({
+      path: normalizedPath,
+      content,
+      source: "created",
+      tracked: false,
+    }));
+  }
+
+  if (!state.openTabs.includes(normalizedPath)) {
+    state.openTabs.push(normalizedPath);
+  }
+
+  state.activeFilePath = normalizedPath;
+  setSelectedItem("file", normalizedPath);
+
+  if (elements.editorInput && state.activeFilePath === normalizedPath) {
+    setEditorValue(content, 0, 0);
+  }
+
+  persistState();
+  renderAll();
+}
+
+function applyAssistantCodeToEditor(content) {
+  const codeBlock = extractFirstChatCodeBlock(content);
+
+  if (!codeBlock?.code) {
+    return null;
+  }
+
+  const activeFile = getActiveFile();
+  const language = normalizeFenceLanguage(codeBlock.language) || activeFile?.language || "";
+  const targetPath = resolveAssistantCodeTargetPath(language);
+
+  writeAssistantCodeToWorkspace(targetPath, codeBlock.code, language);
+  pushLog(`Gemini inserted code into ${targetPath}.`, "info");
+
+  return {
+    path: targetPath,
+    language,
+  };
+}
+
 function hideEditorSuggestions() {
   suggestionState.items = [];
   suggestionState.activeIndex = 0;
@@ -2902,6 +3040,7 @@ async function sendChatMessage() {
     const assistantText = data.output_text || "I could not parse a reply from the API.";
     state.chatMessages.push({ role: "assistant", content: assistantText });
     state.chatMessages = state.chatMessages.slice(-12);
+    applyAssistantCodeToEditor(assistantText);
     pushLog("Gemini responded using the deployed AI Studio assistant.", "info");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
