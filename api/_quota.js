@@ -1,6 +1,6 @@
 import { createSign } from "node:crypto";
 
-const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID || "pixelchat-82d61";
+const FIREBASE_PROJECT_ID = String(process.env.FIREBASE_PROJECT_ID || "pixelchat-82d61").trim();
 const FIRESTORE_SCOPE = "https://www.googleapis.com/auth/datastore";
 const OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const DEFAULT_RUN_LIMIT = 5;
@@ -8,9 +8,24 @@ const DEFAULT_RUN_LIMIT = 5;
 let cachedAccessToken = "";
 let accessTokenExpiresAt = 0;
 
+function normalizeEnvValue(value) {
+  const trimmed = String(value || "").trim();
+
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim();
+  }
+
+  return trimmed;
+}
+
 function getServiceAccountConfig() {
-  const clientEmail = process.env.FIREBASE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "";
-  const privateKey = (process.env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY || process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || "").replace(/\\n/g, "\n");
+  const clientEmail = normalizeEnvValue(process.env.FIREBASE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "");
+  const privateKey = normalizeEnvValue(
+    process.env.FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY || process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY || ""
+  ).replace(/\\n/g, "\n");
 
   if (!clientEmail || !privateKey) {
     throw new Error("Server-side Firebase usage guards are not configured. Add FIREBASE_SERVICE_ACCOUNT_EMAIL and FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY in Vercel.");
@@ -61,7 +76,11 @@ async function getGoogleAccessToken() {
   const data = await response.json();
 
   if (!response.ok || !data.access_token) {
-    throw new Error(data.error_description || data.error || "Could not obtain Google access token.");
+    const baseMessage = data.error_description || data.error || "Could not obtain Google access token.";
+    const hint = String(baseMessage).toLowerCase().includes("account not found")
+      ? ` The configured FIREBASE_SERVICE_ACCOUNT_EMAIL does not appear to exist in project "${FIREBASE_PROJECT_ID}" or it does not match the uploaded private key.`
+      : "";
+    throw new Error(`${baseMessage}${hint}`);
   }
 
   cachedAccessToken = data.access_token;
