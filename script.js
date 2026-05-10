@@ -623,14 +623,18 @@ function persistState() {
 
 function getRemainingScriptRuns() {
   if (!serverRunQuotaReady) {
-    return 0;
+    return SCRIPT_RUN_LIMIT;
   }
 
   return Math.max(0, SCRIPT_RUN_LIMIT - (state.scriptRunCount || 0));
 }
 
 function hasScriptRunQuota() {
-  return serverRunQuotaReady && getRemainingScriptRuns() > 0;
+  if (!serverRunQuotaReady) {
+    return true;
+  }
+
+  return getRemainingScriptRuns() > 0;
 }
 
 function getScriptRunLimitMessage() {
@@ -4486,7 +4490,10 @@ ensureFirebaseAuth()
       try {
         await refreshServerRunQuota();
       } catch (error) {
-        pushLog("Server-side run quota could not be refreshed right now.", "warn");
+        pushLog(
+          `Server-side run quota could not be refreshed right now${error instanceof Error && error.message ? `: ${error.message}` : ""}.`,
+          "warn"
+        );
       }
       renderAll();
       checkShellBackend();
