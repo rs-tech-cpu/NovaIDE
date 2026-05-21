@@ -334,7 +334,21 @@ function loadState() {
         : createDefaultState().terminalHistory,
       terminalCwd: typeof parsed.terminalCwd === "string" ? parsed.terminalCwd : "",
       chatMessages: Array.isArray(parsed.chatMessages) && parsed.chatMessages.length
-        ? parsed.chatMessages.slice(-12)
+        ? parsed.chatMessages.slice(-12).map((message) => ({
+            role: message?.role === "assistant" ? "assistant" : "user",
+            content: String(message?.content || ""),
+            workspaceChanges: Array.isArray(message?.workspaceChanges?.changes)
+              ? {
+                  summary: String(message.workspaceChanges.summary || "").trim(),
+                  changes: message.workspaceChanges.changes.map((change) => ({
+                    path: String(change?.path || "").trim(),
+                    type: String(change?.type || "").trim(),
+                    additions: Number(change?.additions || 0),
+                    deletions: Number(change?.deletions || 0),
+                  })).filter((change) => change.path),
+                }
+              : null,
+          }))
         : createDefaultState().chatMessages,
       openrouterModel: normalizeChatModel(parsed.openrouterModel),
       previewWidth: typeof parsed.previewWidth === "number" ? parsed.previewWidth : createDefaultState().previewWidth,
@@ -1609,31 +1623,94 @@ function renderChatPanel() {
   elements.chatList.innerHTML = messages.map((message) => `
     <article class="chat-message ${message.role === "assistant" ? "chat-message--assistant" : ""}">
       <p class="chat-message__role">${message.role}</p>
-      <div class="chat-message__body">${renderChatMessageBody(message.content)}</div>
+      <div class="chat-message__body">${renderChatMessageBody(message)}</div>
     </article>
   `).join("");
 }
 
-function renderChatMessageBody(content) {
+function parseWorkspaceActionBlock(content) {
+  const match = String(content || "").match(/```nova-workspace\s*\n?([\s\S]*?)```/i);
+
+  if (!match) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(match[1]);
+
+    if (!Array.isArray(parsed?.operations)) {
+      return null;
+    }
+
+    return {
+      rawBlock: match[0],
+      summary: String(parsed.summary || "").trim(),
+      operations: parsed.operations,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function stripWorkspaceActionBlock(content) {
+  return String(content || "").replace(/```nova-workspace\s*\n?[\s\S]*?```/i, "").trim();
+}
+
+function renderWorkspaceChangeSummary(workspaceChanges) {
+  if (!workspaceChanges?.changes?.length) {
+    return "";
+  }
+
+  const summary = workspaceChanges.summary
+    ? `<p class="chat-change-list__summary">${escapeHtml(workspaceChanges.summary)}</p>`
+    : "";
+
+  const rows = workspaceChanges.changes.map((change) => `
+    <div class="chat-change-list__item">
+      <div class="chat-change-list__file">
+        <strong>${escapeHtml(change.path)}</strong>
+        <span class="chat-change-list__action">${escapeHtml(change.type)}</span>
+      </div>
+      <div class="chat-change-list__stats">
+        <span class="chat-change-list__plus">+${Number(change.additions || 0)}</span>
+        <span class="chat-change-list__minus">-${Number(change.deletions || 0)}</span>
+        <span class="chat-change-list__caret" aria-hidden="true">⌄</span>
+      </div>
+    </div>
+  `).join("");
+
+  return `
+    <section class="chat-change-list">
+      ${summary}
+      <div class="chat-change-list__rows">${rows}</div>
+    </section>
+  `;
+}
+
+function renderChatMessageBody(message) {
+  const content = typeof message === "string" ? message : message?.content;
+  const workspaceChanges = typeof message === "string" ? null : message?.workspaceChanges;
+  const visibleContent = workspaceChanges ? stripWorkspaceActionBlock(content) : String(content || "");
   const segments = String(content || "").split(/```([\w#+.-]*)\n?([\s\S]*?)```/g);
 
-  if (segments.length === 1) {
-    return `<p>${escapeHtml(content)}</p>`;
+  if (segments.length === 1 && !workspaceChanges) {
+    return `<p>${escapeHtml(visibleContent)}</p>`;
   }
 
   const rendered = [];
+  const fallbackSegments = String(visibleContent || "").split(/```([\w#+.-]*)\n?([\s\S]*?)```/g);
 
-  for (let index = 0; index < segments.length; index += 1) {
+  for (let index = 0; index < fallbackSegments.length; index += 1) {
     if (index % 3 === 0) {
-      const text = segments[index];
+      const text = fallbackSegments[index];
       if (text.trim()) {
         rendered.push(`<p>${escapeHtml(text)}</p>`);
       }
       continue;
     }
 
-    const language = segments[index];
-    const code = segments[index + 1] || "";
+    const language = fallbackSegments[index];
+    const code = fallbackSegments[index + 1] || "";
     rendered.push(`
       <section class="chat-code-block">
         <div class="chat-code-block__header">
@@ -1644,6 +1721,10 @@ function renderChatMessageBody(content) {
       </section>
     `);
     index += 1;
+  }
+
+  if (workspaceChanges) {
+    rendered.push(renderWorkspaceChangeSummary(workspaceChanges));
   }
 
   return rendered.join("");
@@ -1732,7 +1813,63 @@ function resolveAssistantCodeTargetPath(language) {
   return defaultPath || activeFile?.path || "app.js";
 }
 
-function writeAssistantCodeToWorkspace(path, content, language) {
+function countTextLines(text) {
+  const normalized = String(text || "").replace(/\r\n?/g, "\n");
+
+  if (!normalized) {
+    return 0;
+  }
+
+  return normalized.split("\n").length;
+}
+
+function computeLineChangeStats(beforeContent, afterContent) {
+  const beforeLines = String(beforeContent || "").replace(/\r\n?/g, "\n").split("\n");
+  const afterLines = String(afterContent || "").replace(/\r\n?/g, "\n").split("\n");
+
+  if (!beforeContent) {
+    return { additions: countTextLines(afterContent), deletions: 0 };
+  }
+
+  if (!afterContent) {
+    return { additions: 0, deletions: countTextLines(beforeContent) };
+  }
+
+  const rows = beforeLines.length;
+  const columns = afterLines.length;
+
+  if ((rows + 1) * (columns + 1) > 50_000) {
+    return {
+      additions: Math.max(columns - rows, 0),
+      deletions: Math.max(rows - columns, 0),
+    };
+  }
+
+  let previous = new Array(columns + 1).fill(0);
+
+  for (let rowIndex = 1; rowIndex <= rows; rowIndex += 1) {
+    const current = new Array(columns + 1).fill(0);
+
+    for (let columnIndex = 1; columnIndex <= columns; columnIndex += 1) {
+      if (beforeLines[rowIndex - 1] === afterLines[columnIndex - 1]) {
+        current[columnIndex] = previous[columnIndex - 1] + 1;
+      } else {
+        current[columnIndex] = Math.max(previous[columnIndex], current[columnIndex - 1]);
+      }
+    }
+
+    previous = current;
+  }
+
+  const sharedLineCount = previous[columns];
+
+  return {
+    additions: Math.max(columns - sharedLineCount, 0),
+    deletions: Math.max(rows - sharedLineCount, 0),
+  };
+}
+
+function writeAssistantWorkspaceFile(path, content, language) {
   const normalizedPath = normalizePath(path);
   const folderPath = getFolderPath(normalizedPath);
   ensureFolderPath(folderPath === "workspace" ? "" : folderPath);
@@ -1747,7 +1884,7 @@ function writeAssistantCodeToWorkspace(path, content, language) {
     state.files.push(createFileRecord({
       path: normalizedPath,
       content,
-      source: "created",
+      source: "assistant",
       tracked: false,
     }));
   }
@@ -1755,6 +1892,12 @@ function writeAssistantCodeToWorkspace(path, content, language) {
   if (!state.openTabs.includes(normalizedPath)) {
     state.openTabs.push(normalizedPath);
   }
+
+  return normalizedPath;
+}
+
+function writeAssistantCodeToWorkspace(path, content, language) {
+  const normalizedPath = writeAssistantWorkspaceFile(path, content, language);
 
   state.activeFilePath = normalizedPath;
   setSelectedItem("file", normalizedPath);
@@ -1784,6 +1927,84 @@ function applyAssistantCodeToEditor(content) {
   return {
     path: targetPath,
     language,
+  };
+}
+
+function applyAssistantWorkspaceActions(content) {
+  const actionBlock = parseWorkspaceActionBlock(content);
+
+  if (!actionBlock) {
+    return null;
+  }
+
+  const changes = [];
+  let firstOpenablePath = "";
+
+  actionBlock.operations.forEach((operation) => {
+    const type = String(operation?.type || "").trim().toLowerCase();
+    const path = normalizePath(operation?.path || "");
+
+    if (!path || !["create", "update", "delete"].includes(type)) {
+      return;
+    }
+
+    const existingFile = state.files.find((file) => file.path === path);
+    const beforeContent = existingFile?.content || "";
+
+    if (type === "delete") {
+      const removed = removeItemAtPath(path);
+
+      if (removed) {
+        changes.push({
+          path,
+          type: "delete",
+          additions: 0,
+          deletions: countTextLines(beforeContent),
+        });
+      }
+      return;
+    }
+
+    const nextContent = String(operation?.content || "");
+    const normalizedLanguage = normalizeFenceLanguage(operation?.language) || inferLanguage(path);
+    const normalizedPath = writeAssistantWorkspaceFile(path, nextContent, normalizedLanguage);
+    const stats = computeLineChangeStats(beforeContent, nextContent);
+
+    changes.push({
+      path: normalizedPath,
+      type: existingFile ? "update" : "create",
+      additions: stats.additions,
+      deletions: stats.deletions,
+    });
+
+    if (!firstOpenablePath) {
+      firstOpenablePath = normalizedPath;
+    }
+  });
+
+  if (!changes.length) {
+    return null;
+  }
+
+  if (firstOpenablePath) {
+    state.activeFilePath = firstOpenablePath;
+    setSelectedItem("file", firstOpenablePath);
+
+    if (elements.editorInput && state.activeFilePath === firstOpenablePath) {
+      const activeFile = state.files.find((file) => file.path === firstOpenablePath);
+      if (activeFile) {
+        setEditorValue(activeFile.content, 0, 0);
+      }
+    }
+  }
+
+  persistState();
+  renderAll();
+  pushLog(`Gemini applied ${changes.length} workspace change${changes.length === 1 ? "" : "s"}.`, "info");
+
+  return {
+    summary: actionBlock.summary || "Applied Gemini workspace changes.",
+    changes,
   };
 }
 
@@ -3152,9 +3373,19 @@ async function sendChatMessage() {
     }
 
     const assistantText = data.output_text || "I could not parse a reply from the API.";
-    state.chatMessages.push({ role: "assistant", content: assistantText });
+    const workspaceChanges = applyAssistantWorkspaceActions(assistantText);
+
+    state.chatMessages.push({
+      role: "assistant",
+      content: assistantText,
+      workspaceChanges,
+    });
     state.chatMessages = state.chatMessages.slice(-12);
-    applyAssistantCodeToEditor(assistantText);
+
+    if (!workspaceChanges) {
+      applyAssistantCodeToEditor(assistantText);
+    }
+
     pushLog("Gemini responded using the deployed AI Studio assistant.", "info");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
