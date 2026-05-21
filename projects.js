@@ -24,10 +24,14 @@ const elements = {
   userAvatar: document.querySelector("[data-projects-avatar]"),
   signOut: document.querySelector("[data-projects-signout]"),
   openCreateButtons: document.querySelectorAll("[data-open-create-project]"),
+  menu: document.querySelector("[data-project-menu]"),
+  menuActions: document.querySelectorAll("[data-project-menu-action]"),
   modal: document.querySelector("[data-create-project-modal]"),
   modalClose: document.querySelectorAll("[data-close-create-project]"),
   form: document.querySelector("[data-create-project-form]"),
   input: document.querySelector("[data-create-project-input]"),
+  eyebrow: document.querySelector("[data-create-project-eyebrow]"),
+  title: document.querySelector("[data-create-project-title]"),
   note: document.querySelector("[data-create-project-note]"),
   submit: document.querySelector("[data-create-project-submit]"),
 };
@@ -36,6 +40,9 @@ const scriptLoaders = {};
 let authInstance = null;
 let firestoreInstance = null;
 let accessRequestToken = 0;
+let projectModalMode = "create";
+let projectModalSourceName = "";
+let contextMenuProjectName = "";
 
 function normalizeProjectName(name) {
   return String(name || "")
@@ -124,8 +131,40 @@ function renderUser(user) {
 }
 
 function openCreateProjectModal() {
+  projectModalMode = "create";
+  projectModalSourceName = "";
+  elements.eyebrow.textContent = "New Project";
+  elements.title.textContent = "Create a Nova workspace";
+  elements.submit.textContent = "Create Project";
+  elements.input.value = "";
   elements.modal.hidden = false;
   setCreateNote("Nova will create a starter project with index.html, app.css, and app.js.");
+  elements.input.focus();
+  elements.input.select();
+}
+
+function openRenameProjectModal(projectName) {
+  projectModalMode = "rename";
+  projectModalSourceName = projectName;
+  elements.eyebrow.textContent = "Rename Project";
+  elements.title.textContent = "Rename this Nova workspace";
+  elements.submit.textContent = "Rename Project";
+  elements.input.value = projectName;
+  elements.modal.hidden = false;
+  setCreateNote("Renaming will move the cloud project to the new name.");
+  elements.input.focus();
+  elements.input.select();
+}
+
+function openDuplicateProjectModal(projectName) {
+  projectModalMode = "duplicate";
+  projectModalSourceName = projectName;
+  elements.eyebrow.textContent = "Duplicate Project";
+  elements.title.textContent = "Create a copy of this workspace";
+  elements.submit.textContent = "Duplicate Project";
+  elements.input.value = `${projectName} copy`;
+  elements.modal.hidden = false;
+  setCreateNote("Nova will duplicate the current files, folders, and workspace state into a new project.");
   elements.input.focus();
   elements.input.select();
 }
@@ -133,7 +172,31 @@ function openCreateProjectModal() {
 function closeCreateProjectModal() {
   elements.modal.hidden = true;
   elements.form.reset();
+  projectModalMode = "create";
+  projectModalSourceName = "";
+  elements.eyebrow.textContent = "New Project";
+  elements.title.textContent = "Create a Nova workspace";
+  elements.submit.textContent = "Create Project";
   setCreateNote("Nova will create a starter project with index.html, app.css, and app.js.");
+}
+
+function showProjectMenu(projectName, x, y) {
+  contextMenuProjectName = projectName;
+  elements.menu.hidden = false;
+  elements.menu.style.left = "0px";
+  elements.menu.style.top = "0px";
+
+  const bounds = elements.menu.getBoundingClientRect();
+  const nextLeft = Math.min(x, window.innerWidth - bounds.width - 12);
+  const nextTop = Math.min(y, window.innerHeight - bounds.height - 12);
+
+  elements.menu.style.left = `${Math.max(12, nextLeft)}px`;
+  elements.menu.style.top = `${Math.max(12, nextTop)}px`;
+}
+
+function hideProjectMenu() {
+  contextMenuProjectName = "";
+  elements.menu.hidden = true;
 }
 
 function loadExternalScript(src) {
@@ -237,6 +300,16 @@ function getWorkspaceCollectionRef(user) {
   }
 
   return firestoreInstance.collection("novaideUsers").doc(user.uid).collection("Workspace");
+}
+
+function getProjectDocumentRef(user, projectName) {
+  const workspaceCollection = getWorkspaceCollectionRef(user);
+
+  if (!workspaceCollection) {
+    return null;
+  }
+
+  return workspaceCollection.doc(normalizeProjectName(projectName) || "frontend-studio");
 }
 
 function getLegacyWorkspaceDocumentRef(user) {
@@ -372,7 +445,7 @@ console.log("Workspace cleared to a blank HTML, CSS, and JavaScript starter.");`
 
 async function createProjectDocument(user, projectName) {
   const normalizedName = normalizeProjectName(projectName) || "frontend-studio";
-  const workspaceRef = getWorkspaceCollectionRef(user)?.doc(normalizedName);
+  const workspaceRef = getProjectDocumentRef(user, normalizedName);
 
   if (!workspaceRef) {
     throw new Error("Could not access your project workspace collection.");
@@ -392,6 +465,118 @@ async function createProjectDocument(user, projectName) {
   }, { merge: true });
 
   return normalizedName;
+}
+
+async function duplicateProjectDocument(user, sourceProjectName, nextProjectName) {
+  const sourceRef = getProjectDocumentRef(user, sourceProjectName);
+  const nextRef = getProjectDocumentRef(user, nextProjectName);
+
+  if (!sourceRef || !nextRef) {
+    throw new Error("Could not access your project workspace collection.");
+  }
+
+  const [sourceSnapshot, nextSnapshot] = await Promise.all([sourceRef.get(), nextRef.get()]);
+
+  if (!sourceSnapshot.exists) {
+    throw new Error("The original project could not be found.");
+  }
+
+  if (nextSnapshot.exists) {
+    throw new Error("A project with that name already exists.");
+  }
+
+  const workspace = sourceSnapshot.data()?.workspace;
+
+  if (!workspace || typeof workspace !== "object") {
+    throw new Error("The original project is missing workspace data.");
+  }
+
+  const duplicatedWorkspace = {
+    ...workspace,
+    workspaceName: normalizeProjectName(nextProjectName) || "frontend-studio",
+  };
+
+  await nextRef.set({
+    workspace: duplicatedWorkspace,
+    email: user.email || "",
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  return duplicatedWorkspace.workspaceName;
+}
+
+async function renameProjectDocument(user, sourceProjectName, nextProjectName) {
+  const sourceRef = getProjectDocumentRef(user, sourceProjectName);
+  const nextRef = getProjectDocumentRef(user, nextProjectName);
+
+  if (!sourceRef || !nextRef) {
+    throw new Error("Could not access your project workspace collection.");
+  }
+
+  const normalizedSourceName = normalizeProjectName(sourceProjectName) || "frontend-studio";
+  const normalizedNextName = normalizeProjectName(nextProjectName) || "frontend-studio";
+
+  if (normalizedSourceName === normalizedNextName) {
+    return normalizedNextName;
+  }
+
+  const [sourceSnapshot, nextSnapshot] = await Promise.all([sourceRef.get(), nextRef.get()]);
+
+  if (!sourceSnapshot.exists) {
+    throw new Error("The original project could not be found.");
+  }
+
+  if (nextSnapshot.exists) {
+    throw new Error("A project with that name already exists.");
+  }
+
+  const workspace = sourceSnapshot.data()?.workspace;
+
+  if (!workspace || typeof workspace !== "object") {
+    throw new Error("The original project is missing workspace data.");
+  }
+
+  const renamedWorkspace = {
+    ...workspace,
+    workspaceName: normalizedNextName,
+  };
+
+  await nextRef.set({
+    workspace: renamedWorkspace,
+    email: user.email || "",
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  await sourceRef.delete();
+
+  const currentProject = normalizeProjectName(window.localStorage.getItem(CURRENT_PROJECT_KEY) || "");
+  if (currentProject === normalizedSourceName) {
+    setCurrentProjectName(normalizedNextName);
+  }
+
+  return normalizedNextName;
+}
+
+async function deleteProjectDocument(user, projectName) {
+  const projectRef = getProjectDocumentRef(user, projectName);
+
+  if (!projectRef) {
+    throw new Error("Could not access your project workspace collection.");
+  }
+
+  const snapshot = await projectRef.get();
+
+  if (!snapshot.exists) {
+    throw new Error("The selected project no longer exists.");
+  }
+
+  await projectRef.delete();
+
+  const currentProject = normalizeProjectName(window.localStorage.getItem(CURRENT_PROJECT_KEY) || "");
+  if (currentProject === normalizeProjectName(projectName)) {
+    window.localStorage.removeItem(CURRENT_PROJECT_KEY);
+    window.localStorage.removeItem(STORAGE_KEY);
+  }
 }
 
 async function migrateLegacyWorkspaceIfNeeded(user) {
@@ -464,7 +649,7 @@ function renderProjects(projects) {
   elements.empty.hidden = true;
   setStatus(`${projects.length} project${projects.length === 1 ? "" : "s"}`);
   elements.grid.innerHTML = projects.map((project) => `
-    <article class="project-card">
+    <article class="project-card" data-project-card="${escapeHtml(project.name)}">
       <div class="project-card__header">
         <div>
           <p class="projects-eyebrow">Project</p>
@@ -619,6 +804,22 @@ elements.form.addEventListener("submit", async (event) => {
       throw new Error("You need to be signed in.");
     }
 
+    if (projectModalMode === "rename") {
+      const renamedProject = await renameProjectDocument(user, projectModalSourceName, projectName);
+      closeCreateProjectModal();
+      setStatus(`Renamed ${projectModalSourceName} to ${renamedProject}.`);
+      await loadProjects(user);
+      return;
+    }
+
+    if (projectModalMode === "duplicate") {
+      const duplicatedProject = await duplicateProjectDocument(user, projectModalSourceName, projectName);
+      closeCreateProjectModal();
+      setStatus(`Duplicated ${projectModalSourceName} into ${duplicatedProject}.`);
+      await loadProjects(user);
+      return;
+    }
+
     const createdProject = await createProjectDocument(user, projectName);
     setCurrentProjectName(createdProject);
     closeCreateProjectModal();
@@ -642,6 +843,70 @@ elements.grid.addEventListener("click", (event) => {
   openProject(button.dataset.openProject || "");
 });
 
+elements.grid.addEventListener("contextmenu", (event) => {
+  const projectCard = event.target.closest("[data-project-card]");
+
+  if (!projectCard) {
+    hideProjectMenu();
+    return;
+  }
+
+  event.preventDefault();
+  showProjectMenu(projectCard.dataset.projectCard || "", event.clientX, event.clientY);
+});
+
+elements.menuActions.forEach((button) => {
+  button.addEventListener("click", async () => {
+    const action = button.dataset.projectMenuAction || "";
+    const projectName = contextMenuProjectName;
+    hideProjectMenu();
+
+    if (!projectName) {
+      return;
+    }
+
+    if (action === "open") {
+      openProject(projectName);
+      return;
+    }
+
+    if (action === "rename") {
+      openRenameProjectModal(projectName);
+      return;
+    }
+
+    if (action === "duplicate") {
+      openDuplicateProjectModal(projectName);
+      return;
+    }
+
+    if (action !== "delete") {
+      return;
+    }
+
+    const confirmed = window.confirm(`Delete "${projectName}"? This removes the cloud project for this account.`);
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const { auth } = await ensureFirebaseServices();
+      const user = auth.currentUser;
+
+      if (!user) {
+        throw new Error("You need to be signed in.");
+      }
+
+      await deleteProjectDocument(user, projectName);
+      setStatus(`Deleted ${projectName}.`);
+      await loadProjects(user);
+    } catch (error) {
+      setStatus(getProjectsErrorMessage(error));
+    }
+  });
+});
+
 elements.signOut.addEventListener("click", async () => {
   clearApprovedAccess();
   window.localStorage.removeItem(CURRENT_PROJECT_KEY);
@@ -655,10 +920,23 @@ elements.signOut.addEventListener("click", async () => {
 });
 
 window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && elements.menu && !elements.menu.hidden) {
+    hideProjectMenu();
+  }
+
   if (event.key === "Escape" && elements.modal && !elements.modal.hidden) {
     closeCreateProjectModal();
   }
 });
+
+window.addEventListener("click", (event) => {
+  if (!event.target.closest("[data-project-menu]")) {
+    hideProjectMenu();
+  }
+});
+
+window.addEventListener("resize", hideProjectMenu);
+window.addEventListener("scroll", hideProjectMenu, true);
 
 bootstrapProjectsHome().catch((error) => {
   hideLoading();

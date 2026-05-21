@@ -65,6 +65,13 @@
     </div>
   </main>
 
+  <div class="project-menu" data-project-menu hidden>
+    <button class="project-menu__item" type="button" data-project-menu-action="open">Open</button>
+    <button class="project-menu__item" type="button" data-project-menu-action="duplicate">Duplicate</button>
+    <button class="project-menu__item" type="button" data-project-menu-action="rename">Rename</button>
+    <button class="project-menu__item project-menu__item--danger" type="button" data-project-menu-action="delete">Delete</button>
+  </div>
+
   <div class="projects-loading" data-projects-loading>
     <div class="projects-loading__card">
       <div class="projects-loading__spinner"></div>
@@ -78,8 +85,8 @@
     <form class="projects-modal__card" data-create-project-form>
       <div class="projects-modal__header">
         <div>
-          <p class="projects-eyebrow">New Project</p>
-          <h2>Create a Nova workspace</h2>
+          <p class="projects-eyebrow" data-create-project-eyebrow>New Project</p>
+          <h2 data-create-project-title>Create a Nova workspace</h2>
         </div>
         <button class="projects-modal__close" type="button" aria-label="Close project dialog" data-close-create-project>x</button>
       </div>

@@ -367,6 +367,47 @@ button {
   animation: spin 0.9s linear infinite;
 }
 
+.project-menu {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  gap: 6px;
+  min-width: 190px;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(30, 35, 50, 0.96), rgba(20, 24, 37, 0.96));
+  box-shadow: 0 24px 60px rgba(3, 5, 12, 0.42);
+  backdrop-filter: blur(20px);
+}
+
+.project-menu[hidden] {
+  display: none;
+}
+
+.project-menu__item {
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #f7f2ea;
+  text-align: left;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.project-menu__item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.project-menu__item--danger {
+  color: #ffb9c1;
+}
+
+.project-menu__item--danger:hover {
+  background: rgba(255, 108, 132, 0.12);
+}
+
 .projects-loading[hidden],
 .projects-modal[hidden] {
   display: none;
