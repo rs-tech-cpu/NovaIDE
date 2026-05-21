@@ -367,6 +367,7 @@ button {
   animation: spin 0.9s linear infinite;
 }
 
+.projects-loading[hidden],
 .projects-modal[hidden] {
   display: none;
 }

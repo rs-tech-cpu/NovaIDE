@@ -77,6 +77,17 @@ function setStatus(message) {
   elements.status.textContent = message;
 }
 
+function getProjectsErrorMessage(error) {
+  const message = error instanceof Error ? error.message : String(error || "");
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("missing or insufficient permissions") || normalized.includes("permission-denied")) {
+    return 'Firestore rules need to allow Nova projects at novaideUsers/{userId}/Workspace/{projectName}.';
+  }
+
+  return message || "Could not load your projects.";
+}
+
 function setCreateNote(message, tone = "info") {
   elements.note.textContent = message;
   elements.note.style.color = tone === "error" ? "#ffb4b4" : tone === "success" ? "#b9ffd0" : "";
@@ -574,7 +585,7 @@ async function bootstrapProjectsHome() {
 
       hideLoading();
       clearApprovedAccess();
-      setStatus(error instanceof Error ? error.message : "Could not load your projects.");
+      setStatus(getProjectsErrorMessage(error));
     }
   });
 }
@@ -651,5 +662,5 @@ window.addEventListener("keydown", (event) => {
 
 bootstrapProjectsHome().catch((error) => {
   hideLoading();
-  setStatus(error instanceof Error ? error.message : "Could not load your projects.");
+  setStatus(getProjectsErrorMessage(error));
 });
