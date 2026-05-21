@@ -1629,31 +1629,56 @@ function renderChatPanel() {
 }
 
 function parseWorkspaceActionBlock(content) {
-  const match = String(content || "").match(/```nova-workspace\s*\n?([\s\S]*?)```/i);
+  const rawContent = String(content || "");
+  const fencedMatches = Array.from(rawContent.matchAll(/```([\w#+.-]*)\s*\n?([\s\S]*?)```/g));
 
-  if (!match) {
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(match[1]);
-
-    if (!Array.isArray(parsed?.operations)) {
+  const normalizeWorkspacePayload = (parsed, rawBlock) => {
+    if (!parsed || !Array.isArray(parsed.operations)) {
       return null;
     }
 
     return {
-      rawBlock: match[0],
+      rawBlock,
       summary: String(parsed.summary || "").trim(),
       operations: parsed.operations,
     };
+  };
+
+  for (const match of fencedMatches) {
+    const fenceLanguage = String(match[1] || "").trim().toLowerCase();
+    const fenceBody = String(match[2] || "").trim();
+
+    if (fenceLanguage && fenceLanguage !== "nova-workspace" && fenceLanguage !== "json") {
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(fenceBody);
+      const normalized = normalizeWorkspacePayload(parsed, match[0]);
+
+      if (normalized) {
+        return normalized;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  try {
+    return normalizeWorkspacePayload(JSON.parse(rawContent.trim()), rawContent.trim());
   } catch (error) {
     return null;
   }
 }
 
 function stripWorkspaceActionBlock(content) {
-  return String(content || "").replace(/```nova-workspace\s*\n?[\s\S]*?```/i, "").trim();
+  const actionBlock = parseWorkspaceActionBlock(content);
+
+  if (!actionBlock?.rawBlock) {
+    return String(content || "").trim();
+  }
+
+  return String(content || "").replace(actionBlock.rawBlock, "").trim();
 }
 
 function renderWorkspaceChangeSummary(workspaceChanges) {
@@ -1731,6 +1756,10 @@ function renderChatMessageBody(message) {
 }
 
 function extractFirstChatCodeBlock(content) {
+  if (parseWorkspaceActionBlock(content)) {
+    return null;
+  }
+
   const match = String(content || "").match(/```([\w#+.-]*)\n?([\s\S]*?)```/);
 
   if (!match) {
