@@ -91,6 +91,7 @@ const elements = {
   panelMenuToggle: document.querySelector("[data-panel-menu-toggle]"),
   panelMenu: document.querySelector("[data-panel-menu]"),
   panelMenuItems: document.querySelectorAll("[data-menu-toggle]"),
+  backToProjects: document.querySelector("[data-back-to-projects]"),
   exportProject: document.querySelector("[data-export-project]"),
   renameProject: document.querySelector("[data-rename-project]"),
   openExtensions: document.querySelector("[data-open-extensions]"),
@@ -4617,6 +4618,11 @@ elements.exportProject.addEventListener("click", () => {
   downloadProjectArchive();
   elements.panelMenu.hidden = true;
   elements.panelMenuToggle.setAttribute("aria-expanded", "false");
+});
+elements.backToProjects?.addEventListener("click", () => {
+  elements.panelMenu.hidden = true;
+  elements.panelMenuToggle.setAttribute("aria-expanded", "false");
+  window.location.href = "projects.html";
 });
 elements.renameProject.addEventListener("click", () => {
   elements.renameInput.value = state.workspaceName || "frontend-studio";
