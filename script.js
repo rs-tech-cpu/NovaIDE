@@ -1,4 +1,5 @@
 const STORAGE_KEY = "novaide-workspace-v2";
+const CURRENT_PROJECT_KEY = "novaide-current-project";
 const WORKSPACE_VERSION = 4;
 const DEFAULT_BACKEND_PORT = 8765;
 const APPROVED_ACCESS_KEY = "novaide-approved-email";
@@ -144,6 +145,38 @@ console.log("Workspace cleared to a blank HTML, CSS, and JavaScript starter.");`
   },
 ];
 
+function normalizeProjectName(name) {
+  return String(name || "")
+    .replace(/[\/\\]+/g, "-")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getProjectNameFromLocation() {
+  const params = new URLSearchParams(window.location.search);
+  const fromUrl = normalizeProjectName(params.get("project") || "");
+
+  if (fromUrl) {
+    return fromUrl;
+  }
+
+  return normalizeProjectName(window.localStorage.getItem(CURRENT_PROJECT_KEY) || "");
+}
+
+function setCurrentProjectName(name, { updateUrl = true } = {}) {
+  const normalized = normalizeProjectName(name) || "frontend-studio";
+  currentProjectName = normalized;
+  window.localStorage.setItem(CURRENT_PROJECT_KEY, normalized);
+
+  if (updateUrl) {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set("project", normalized);
+    window.history.replaceState({}, "", nextUrl.toString());
+  }
+
+  return normalized;
+}
+
 function createFileRecord({ path, content, source = "starter", tracked = true }) {
   const normalizedPath = normalizePath(path);
 
@@ -204,10 +237,11 @@ function ensureWorkspaceUpgradeFiles(files, storedVersion = 0) {
 
 function createDefaultState() {
   const { files, folders } = createStarterWorkspace();
+  const initialProjectName = currentProjectName || "frontend-studio";
 
   return {
     workspaceVersion: WORKSPACE_VERSION,
-    workspaceName: "frontend-studio",
+    workspaceName: initialProjectName,
     files,
     folders,
     openTabs: files.map((file) => file.path),
@@ -277,7 +311,7 @@ function loadState() {
       workspaceVersion: WORKSPACE_VERSION,
       workspaceName: typeof parsed.workspaceName === "string" && parsed.workspaceName.trim()
         ? parsed.workspaceName.trim()
-        : "frontend-studio",
+        : (currentProjectName || "frontend-studio"),
       files,
       folders: [...new Set([
         ...(Array.isArray(parsed.folders) ? parsed.folders : []),
@@ -315,6 +349,7 @@ function loadState() {
   }
 }
 
+let currentProjectName = normalizeProjectName(getProjectNameFromLocation());
 let state = loadState();
 let previewTimer = null;
 let previewResizeSession = null;
@@ -541,7 +576,25 @@ function getSerializableState() {
   };
 }
 
-function getWorkspaceDocumentRef(user) {
+function getWorkspaceCollectionRef(user) {
+  if (!firestoreInstance || !user?.uid) {
+    return null;
+  }
+
+  return firestoreInstance.collection("novaideUsers").doc(user.uid).collection("Workspace");
+}
+
+function getWorkspaceDocumentRef(user, projectName = currentProjectName || state.workspaceName || "frontend-studio") {
+  const collectionRef = getWorkspaceCollectionRef(user);
+
+  if (!collectionRef) {
+    return null;
+  }
+
+  return collectionRef.doc(normalizeProjectName(projectName) || "frontend-studio");
+}
+
+function getLegacyWorkspaceDocumentRef(user) {
   if (!firestoreInstance || !user?.uid) {
     return null;
   }
@@ -549,11 +602,56 @@ function getWorkspaceDocumentRef(user) {
   return firestoreInstance.collection("novaideUsers").doc(user.uid).collection("workspaces").doc("primary");
 }
 
+async function migrateLegacyWorkspaceIfNeeded(user, fallbackProjectName = currentProjectName || "frontend-studio") {
+  const legacyRef = getLegacyWorkspaceDocumentRef(user);
+
+  if (!legacyRef) {
+    return null;
+  }
+
+  const legacySnapshot = await legacyRef.get();
+
+  if (!legacySnapshot.exists) {
+    return null;
+  }
+
+  const legacyWorkspace = legacySnapshot.data()?.workspace;
+
+  if (!legacyWorkspace || typeof legacyWorkspace !== "object") {
+    return null;
+  }
+
+  const migratedProjectName = normalizeProjectName(
+    legacyWorkspace.workspaceName || fallbackProjectName || "frontend-studio"
+  ) || "frontend-studio";
+  const nextWorkspace = {
+    ...legacyWorkspace,
+    workspaceName: migratedProjectName,
+  };
+  const nextRef = getWorkspaceDocumentRef(user, migratedProjectName);
+
+  if (!nextRef) {
+    return null;
+  }
+
+  await nextRef.set({
+    workspace: nextWorkspace,
+    email: user.email || "",
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  return {
+    workspace: nextWorkspace,
+    projectName: migratedProjectName,
+  };
+}
+
 async function saveWorkspaceToCloudNow() {
   if (!cloudSyncReady || !authInstance?.currentUser) {
     return;
   }
 
+  setCurrentProjectName(state.workspaceName || currentProjectName || "frontend-studio");
   const workspaceRef = getWorkspaceDocumentRef(authInstance.currentUser);
 
   if (!workspaceRef) {
@@ -581,6 +679,10 @@ function queueCloudWorkspaceSave() {
 }
 
 async function syncWorkspaceFromCloud(user) {
+  if (!currentProjectName) {
+    setCurrentProjectName(state.workspaceName || "frontend-studio");
+  }
+
   const workspaceRef = getWorkspaceDocumentRef(user);
 
   if (!workspaceRef) {
@@ -594,21 +696,32 @@ async function syncWorkspaceFromCloud(user) {
   if (remoteWorkspace && typeof remoteWorkspace === "object") {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteWorkspace));
     state = loadState();
+    setCurrentProjectName(state.workspaceName || currentProjectName || "frontend-studio");
     pushLog("Workspace loaded from your account.", "info");
   } else {
-    const firstAccountState = createDefaultState();
-    firstAccountState.scriptRunCount = 0;
-    firstAccountState.logs = [
-      createLogEntry("New workspace created for your account.", "info"),
-    ];
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(firstAccountState));
-    state = loadState();
+    const migrated = await migrateLegacyWorkspaceIfNeeded(user, currentProjectName || state.workspaceName || "frontend-studio");
 
-    await workspaceRef.set({
-      workspace: getSerializableState(),
-      email: user.email || "",
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
+    if (migrated?.workspace) {
+      setCurrentProjectName(migrated.projectName || currentProjectName || "frontend-studio");
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated.workspace));
+      state = loadState();
+      pushLog("Workspace loaded from your account.", "info");
+    } else {
+      const firstAccountState = createDefaultState();
+      firstAccountState.workspaceName = currentProjectName || firstAccountState.workspaceName;
+      firstAccountState.scriptRunCount = 0;
+      firstAccountState.logs = [
+        createLogEntry("New workspace created for your account.", "info"),
+      ];
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(firstAccountState));
+      state = loadState();
+
+      await workspaceRef.set({
+        workspace: getSerializableState(),
+        email: user.email || "",
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
   }
 
   cloudSyncReady = true;
@@ -3381,6 +3494,59 @@ function closeRenameModal() {
   elements.renameForm.reset();
 }
 
+async function renameWorkspaceProject(nextName) {
+  const normalizedNextName = normalizeProjectName(nextName);
+  const previousProjectName = normalizeProjectName(currentProjectName || state.workspaceName || "frontend-studio");
+  const previousWorkspaceName = state.workspaceName;
+
+  if (!normalizedNextName) {
+    throw new Error("Project name cannot be empty.");
+  }
+
+  if (normalizedNextName === previousProjectName) {
+    state.workspaceName = normalizedNextName;
+    setCurrentProjectName(normalizedNextName);
+    persistState();
+    return normalizedNextName;
+  }
+
+  try {
+    state.workspaceName = normalizedNextName;
+
+    if (cloudSyncReady && authInstance?.currentUser) {
+      const currentRef = getWorkspaceDocumentRef(authInstance.currentUser, previousProjectName);
+      const nextRef = getWorkspaceDocumentRef(authInstance.currentUser, normalizedNextName);
+
+      if (!currentRef || !nextRef) {
+        throw new Error("Project rename could not access cloud storage.");
+      }
+
+      const existingTarget = await nextRef.get();
+
+      if (existingTarget.exists) {
+        throw new Error("A project with that name already exists.");
+      }
+
+      await nextRef.set({
+        workspace: getSerializableState(),
+        email: authInstance.currentUser.email || "",
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+
+      if (previousProjectName) {
+        await currentRef.delete().catch(() => {});
+      }
+    }
+
+    setCurrentProjectName(normalizedNextName);
+    persistState();
+    return normalizedNextName;
+  } catch (error) {
+    state.workspaceName = previousWorkspaceName;
+    throw error;
+  }
+}
+
 function closeExtensionsModal() {
   elements.extensionsModal.hidden = true;
 }
@@ -4317,7 +4483,7 @@ elements.createForm.addEventListener("submit", (event) => {
   renderAll();
 });
 
-elements.renameForm.addEventListener("submit", (event) => {
+elements.renameForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const nextName = String(elements.renameInput.value || "").trim();
 
@@ -4325,11 +4491,14 @@ elements.renameForm.addEventListener("submit", (event) => {
     return;
   }
 
-  state.workspaceName = nextName;
-  persistState();
-  closeRenameModal();
-  pushLog(`Renamed workspace to ${nextName}.`, "info");
-  renderAll();
+  try {
+    const appliedName = await renameWorkspaceProject(nextName);
+    closeRenameModal();
+    pushLog(`Renamed workspace to ${appliedName}.`, "info");
+    renderAll();
+  } catch (error) {
+    pushLog(error instanceof Error ? error.message : "Project rename failed.", "error");
+  }
 });
 
 elements.githubForm?.addEventListener("submit", importGitHubRepository);
@@ -4617,6 +4786,12 @@ ensureFirebaseAuth()
         clearApprovedAccess();
         cloudSyncReady = false;
         window.location.href = "home.html";
+        return;
+      }
+
+      if (!currentProjectName) {
+        hideProjectLoading();
+        window.location.href = "projects.html";
         return;
       }
 

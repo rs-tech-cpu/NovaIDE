@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nova Projects</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="projects.css">
+</head>
+<body>
+  <div class="projects-noise"></div>
+
+  <main class="projects-screen">
+    <div class="projects-backdrop"></div>
+
+    <div class="projects-shell">
+      <header class="projects-nav">
+        <div class="projects-brand">
+          <span class="projects-brand__dot"></span>
+          Nova
+        </div>
+        <div class="projects-nav__actions">
+          <div class="projects-user">
+            <span class="projects-user__avatar" data-projects-avatar>NV</span>
+            <div class="projects-user__meta">
+              <strong data-projects-name>Developer</strong>
+              <span data-projects-email>Loading account...</span>
+            </div>
+          </div>
+          <button class="projects-secondary" type="button" data-projects-signout>Sign Out</button>
+        </div>
+      </header>
+
+      <section class="projects-hero">
+        <div>
+          <p class="projects-eyebrow">Project Home</p>
+          <h1>Pick up your Nova workspaces from anywhere.</h1>
+          <p class="projects-copy">
+            Open an existing project, start a fresh one, and keep everything synced to your signed-in Nova account.
+          </p>
+        </div>
+        <button class="projects-primary" type="button" data-open-create-project>New Project</button>
+      </section>
+
+      <section class="projects-panel">
+        <div class="projects-panel__header">
+          <div>
+            <p class="projects-eyebrow">Your Projects</p>
+            <h2>Cloud-synced workspaces</h2>
+          </div>
+          <span class="projects-status" data-projects-status>Checking your projects...</span>
+        </div>
+
+        <div class="projects-grid" data-projects-grid></div>
+
+        <div class="projects-empty" data-projects-empty hidden>
+          <h3>No projects yet</h3>
+          <p>Nova can create a fresh starter project for you, or you can begin with a custom project name.</p>
+          <button class="projects-primary" type="button" data-open-create-project>Create First Project</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="projects-loading" data-projects-loading>
+    <div class="projects-loading__card">
+      <div class="projects-loading__spinner"></div>
+      <h2 data-projects-loading-title>Loading your projects...</h2>
+      <p data-projects-loading-message>Nova is checking your account and retrieving your workspace list.</p>
+    </div>
+  </div>
+
+  <div class="projects-modal" data-create-project-modal hidden>
+    <div class="projects-modal__backdrop" data-close-create-project></div>
+    <form class="projects-modal__card" data-create-project-form>
+      <div class="projects-modal__header">
+        <div>
+          <p class="projects-eyebrow">New Project</p>
+          <h2>Create a Nova workspace</h2>
+        </div>
+        <button class="projects-modal__close" type="button" aria-label="Close project dialog" data-close-create-project>x</button>
+      </div>
+
+      <label class="projects-field">
+        <span>Project name</span>
+        <input type="text" name="projectName" placeholder="frontend-studio" required data-create-project-input>
+      </label>
+
+      <p class="projects-modal__note" data-create-project-note>
+        Nova will create a starter project with <code>index.html</code>, <code>app.css</code>, and <code>app.js</code>.
+      </p>
+
+      <button class="projects-primary projects-primary--full" type="submit" data-create-project-submit>Create Project</button>
+    </form>
+  </div>
+
+  <script src="projects.js"></script>
+</body>
+</html>

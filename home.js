@@ -265,7 +265,7 @@ async function monitorAuthenticatedUser() {
 
         if (result.approved) {
           rememberApprovedAccess(String(user.email || "").trim().toLowerCase());
-          window.location.href = "index.html";
+          window.location.href = "projects.html";
           return;
         }
 
